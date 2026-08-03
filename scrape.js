@@ -1,13 +1,20 @@
-// Drives a real headless browser through batterytown.co.nz's number-plate
-// search and extracts the vehicle info + Battery Town's own recommended
-// battery(ies) for that vehicle.
+// Drives a real headless browser through HCB Technologies' own number-plate
+// search (hcb.co.nz) and extracts the vehicle info + HCB's own recommended
+// battery(ies) for that vehicle, including live retail pricing and stock.
 //
-// WHY A REAL BROWSER: batterytown.co.nz's internal AJAX endpoint
-// (POST /vsapi/getplateresult) sits behind Imperva/Incapsula bot protection
-// plus a device-fingerprint cookie, and rejects requests that don't come
-// from a genuine browser session. Driving an actual headless browser
-// respects that (real page load, real JS execution, real cookies) instead
-// of trying to replay/spoof the API call directly.
+// hcb.co.nz was chosen over batterytown.co.nz (an earlier version of this
+// scraper's target) because it shows live RRP pricing directly on the
+// results page without needing a trade login, so this one scrape can drive
+// both "what battery" and "what it costs" — no separate pricing catalog
+// needed.
+//
+// WHY A REAL BROWSER: hcb.co.nz's internal AJAX endpoint sits behind the
+// same Imperva/Incapsula bot protection as batterytown.co.nz (both are
+// built on the same "vs-" vehicle-search widget) plus a device-fingerprint
+// cookie, and rejects requests that don't come from a genuine browser
+// session. Driving an actual headless browser respects that (real page
+// load, real JS execution, real cookies) instead of trying to replay/spoof
+// the API call directly.
 
 const { chromium } = require("playwright-core");
 
@@ -29,7 +36,7 @@ async function scrapePlate(plate, { headless = true } = {}) {
     });
     const page = await context.newPage();
 
-    await page.goto("https://batterytown.co.nz/number-plate-search", {
+    await page.goto("https://hcb.co.nz/number-plate-search", {
       waitUntil: "domcontentloaded",
       timeout: 30000,
     });
@@ -65,13 +72,18 @@ async function scrapePlate(plate, { headless = true } = {}) {
       return { plate: plate.toUpperCase(), found: false, vehicle: null, products: [] };
     }
 
-    // Vehicle details and results use the site's own CSS classes
-    // (confirmed live on batterytown.co.nz): the vehicle summary lives in
+    // Vehicle details and results use the site's own CSS classes (confirmed
+    // live on hcb.co.nz, which shares its "vs-" vehicle-search widget with
+    // batterytown.co.nz): the vehicle summary lives in
     // `.vs-selected-vehicle-name` with one `<span class="make|model|year|
     // series-chassis|engine">` per field (each holding a label + a value
     // span). Each recommended battery is a `.vs-results-row` containing
     // `.vs-results-partnum` (SKU), `.vs-results-note` (stop/start line),
-    // `.vs-results-cca` and `.vs-results-technology` (each "<label>: value").
+    // `.vs-price-rrp` (live RRP, ex GST), `.vs-results-stock` (stock status
+    // spans), and a product image. (batterytown.co.nz additionally exposes
+    // `.vs-results-cca` / `.vs-results-technology`, which hcb.co.nz's page
+    // doesn't show — extracted opportunistically below in case that ever
+    // changes; they'll just be null here.)
     const { vehicle, products } = await page.evaluate(() => {
       function fieldValue(root, cls) {
         const el = root ? root.querySelector(`span.${cls}`) : null;
@@ -99,17 +111,28 @@ async function scrapePlate(plate, { headless = true } = {}) {
         const note = row.querySelector(".vs-results-note");
         const cca = row.querySelector(".vs-results-cca");
         const tech = row.querySelector(".vs-results-technology");
+        const rrp = row.querySelector(".vs-price-rrp");
+        const img = row.querySelector(".vs-results-pic img");
+        const stockEls = Array.from(row.querySelectorAll(".vs-results-stock span"));
 
         const ccaText = cca ? cca.textContent.replace(/^.*?CCA/i, "") : "";
         const ccaNum = ccaText.match(/(\d+)/);
         const techText = tech ? tech.textContent.replace(/^.*?Technology/i, "") : "";
         const noteText = note ? note.textContent.trim() : "";
 
+        // rrp textContent looks like "RRP:$273.66(excl GST)".
+        const rrpText = rrp ? rrp.textContent : "";
+        const rrpMatch = rrpText.match(/([\d,]+\.\d{2})/);
+
         return {
           sku: sku ? sku.textContent.trim() : null,
+          note: noteText || null,
+          stopStart: noteText ? /^With\b/i.test(noteText) : null,
           cca: ccaNum ? parseInt(ccaNum[1], 10) : null,
           technology: techText.replace(/^[:\s]+/, "").trim() || null,
-          stopStart: noteText ? /^With\b/i.test(noteText) : null,
+          priceExGst: rrpMatch ? parseFloat(rrpMatch[1].replace(/,/g, "")) : null,
+          stock: stockEls.map((s) => s.textContent.trim()).filter(Boolean),
+          imageUrl: img && img.src ? img.src : null,
           rawText: row.innerText.trim(),
         };
       });
