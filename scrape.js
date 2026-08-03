@@ -65,58 +65,62 @@ async function scrapePlate(plate, { headless = true } = {}) {
       return { plate: plate.toUpperCase(), found: false, vehicle: null, products: [] };
     }
 
-    const vehicleMatch = bodyText.match(
-      /Make:\s*([^\n]+?)\s*Model:\s*([^\n]+?)\s*Year:\s*([^\n]+?)\s*Series Chassis:\s*([^\n]+?)\s*Engine:\s*([^\n]+)/
-    );
-
-    // Each result card has a bold SKU heading, a "With/Without Stop/Start"
-    // line, then CCA and Technology bullets. Walk the DOM for elements
-    // containing "CCA:" and climb to the smallest ancestor that also
-    // contains the SKU heading text.
-    const products = await page.evaluate(() => {
-      const cards = [];
-      const ccaEls = Array.from(document.querySelectorAll("body *")).filter((el) =>
-        /^CCA:\s*\d+/.test((el.innerText || "").trim())
-      );
-      const seen = new Set();
-      for (const el of ccaEls) {
-        let container = el.closest("div");
-        for (let i = 0; i < 5 && container; i++) {
-          const t = container.innerText || "";
-          if (/CCA:/.test(t) && t.length < 700 && t.length > 10) break;
-          container = container.parentElement;
-        }
-        if (container && !seen.has(container)) {
-          seen.add(container);
-          const text = container.innerText.trim();
-          const skuMatch = text.match(/^([A-Za-z0-9\/\-]+)/);
-          const ccaMatch = text.match(/CCA:\s*(\d+)/i);
-          const techMatch = text.match(/Technology:\s*([^\n]+)/i);
-          const stopStartMatch = text.match(/(With|Without)\s*Stop\s*\/?\s*Start/i);
-          cards.push({
-            sku: skuMatch ? skuMatch[1] : null,
-            cca: ccaMatch ? parseInt(ccaMatch[1], 10) : null,
-            technology: techMatch ? techMatch[1].trim() : null,
-            stopStart: stopStartMatch ? /^With/i.test(stopStartMatch[0]) : null,
-            rawText: text,
-          });
-        }
+    // Vehicle details and results use the site's own CSS classes
+    // (confirmed live on batterytown.co.nz): the vehicle summary lives in
+    // `.vs-selected-vehicle-name` with one `<span class="make|model|year|
+    // series-chassis|engine">` per field (each holding a label + a value
+    // span). Each recommended battery is a `.vs-results-row` containing
+    // `.vs-results-partnum` (SKU), `.vs-results-note` (stop/start line),
+    // `.vs-results-cca` and `.vs-results-technology` (each "<label>: value").
+    const { vehicle, products } = await page.evaluate(() => {
+      function fieldValue(root, cls) {
+        const el = root ? root.querySelector(`span.${cls}`) : null;
+        if (!el) return null;
+        // Last element child is the value span; falls back to full text.
+        const valueEl = el.children[el.children.length - 1];
+        const text = (valueEl ? valueEl.textContent : el.textContent) || "";
+        return text.trim() || null;
       }
-      return cards;
+
+      const vehicleRoot = document.querySelector(".vs-selected-vehicle-name");
+      const vehicle = vehicleRoot
+        ? {
+            make: fieldValue(vehicleRoot, "make"),
+            model: fieldValue(vehicleRoot, "model"),
+            year: fieldValue(vehicleRoot, "year"),
+            seriesChassis: fieldValue(vehicleRoot, "series-chassis"),
+            engine: fieldValue(vehicleRoot, "engine"),
+          }
+        : null;
+
+      const rows = Array.from(document.querySelectorAll(".vs-results-row"));
+      const products = rows.map((row) => {
+        const sku = row.querySelector(".vs-results-partnum");
+        const note = row.querySelector(".vs-results-note");
+        const cca = row.querySelector(".vs-results-cca");
+        const tech = row.querySelector(".vs-results-technology");
+
+        const ccaText = cca ? cca.textContent.replace(/^.*?CCA/i, "") : "";
+        const ccaNum = ccaText.match(/(\d+)/);
+        const techText = tech ? tech.textContent.replace(/^.*?Technology/i, "") : "";
+        const noteText = note ? note.textContent.trim() : "";
+
+        return {
+          sku: sku ? sku.textContent.trim() : null,
+          cca: ccaNum ? parseInt(ccaNum[1], 10) : null,
+          technology: techText.replace(/^[:\s]+/, "").trim() || null,
+          stopStart: noteText ? /^With\b/i.test(noteText) : null,
+          rawText: row.innerText.trim(),
+        };
+      });
+
+      return { vehicle, products };
     });
 
     return {
       plate: plate.toUpperCase(),
-      found: !!vehicleMatch || products.length > 0,
-      vehicle: vehicleMatch
-        ? {
-            make: vehicleMatch[1].trim(),
-            model: vehicleMatch[2].trim(),
-            year: vehicleMatch[3].trim(),
-            seriesChassis: vehicleMatch[4].trim(),
-            engine: vehicleMatch[5].trim(),
-          }
-        : null,
+      found: !!(vehicle && vehicle.make) || products.length > 0,
+      vehicle: vehicle && vehicle.make ? vehicle : null,
       products,
     };
   } finally {
