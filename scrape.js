@@ -44,7 +44,15 @@ function tagNote(noteText) {
   let transmission = null;
   if (/\bmanual\b/i.test(t)) transmission = "Manual";
   else if (/\bauto\b/i.test(t)) transmission = "Auto";
-  const stopStart = /stop[\s/-]*start/i.test(t) || /\bAGM\b/i.test(t);
+
+  // "Without Stop/Start" (HCB's own wording for a plain, non-AGM row on a
+  // stop/start-capable vehicle) must NOT be tagged as stopStart just because
+  // the substring "Stop/Start" appears in it — check for that negation
+  // first. Otherwise, "With Stop/Start" or a bare "AGM" mention means this
+  // row is the one required for a stop/start vehicle.
+  const withoutStopStart = /\bwithout\b[^.;]*stop[\s/-]*start/i.test(t);
+  const stopStart = !withoutStopStart && (/stop[\s/-]*start/i.test(t) || /\bAGM\b/i.test(t));
+
   return { transmission, stopStart };
 }
 
