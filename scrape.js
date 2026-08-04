@@ -151,7 +151,85 @@ async function scrapePlate(plate, { headless = true } = {}) {
   }
 }
 
-module.exports = { scrapePlate };
+// Fetches full physical specs for a single battery SKU from its own HCB
+// product page (e.g. https://hcb.co.nz/products/n70zl17 for "N70ZL/17").
+// Unlike price/stock (which change and get scraped fresh on every plate
+// lookup), these specs — dimensions, CCA, weight, terminal layout — are
+// static per SKU, so callers are expected to cache this result (see the
+// battery-spec Netlify function, which caches into Supabase and only calls
+// this endpoint once per SKU ever).
+//
+// HCB's product pages are plain Drupal "field" markup — each spec lives in
+// a `.field-name-field-<name>` block with a `.field-item` holding the
+// value (confirmed live by inspecting hcb.co.nz/products/n70zl17). No bot
+// challenge was observed on these pages, but we still drive a real browser
+// for consistency with the rest of this scraper.
+async function scrapeProduct(sku, { headless = true } = {}) {
+  const slug = String(sku).toLowerCase().replace(/[^a-z0-9]/g, "");
+  const browser = await chromium.launch({
+    executablePath: CHROMIUM_PATH,
+    headless,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  try {
+    const context = await browser.newContext({
+      userAgent:
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      viewport: { width: 1366, height: 900 },
+    });
+    const page = await context.newPage();
+
+    const res = await page.goto(`https://hcb.co.nz/products/${slug}`, {
+      waitUntil: "domcontentloaded",
+      timeout: 30000,
+    });
+
+    if (!res || res.status() === 404) {
+      return { sku: String(sku).toUpperCase(), found: false };
+    }
+
+    await page.waitForTimeout(1500);
+
+    const specs = await page.evaluate(() => {
+      function fieldText(cls) {
+        const el = document.querySelector(
+          `.field-name-field-${cls} .field-item, .field-name-field-${cls} .field-items`
+        );
+        return el ? el.textContent.trim() || null : null;
+      }
+      function numFromField(cls) {
+        const t = fieldText(cls);
+        if (!t) return null;
+        const m = t.match(/[\d.]+/);
+        return m ? parseFloat(m[0]) : null;
+      }
+      const categoryEl = document.querySelector(".field-name-body .field-item");
+
+      return {
+        category: categoryEl ? categoryEl.textContent.trim() || null : null,
+        technology: fieldText("lithium"), // HCB's own (oddly-named) field class for battery technology
+        voltage: fieldText("voltage"),
+        cca: numFromField("cca"),
+        lengthMm: numFromField("length"),
+        widthMm: numFromField("width"),
+        boxHeightMm: numFromField("height"),
+        weightKg: numFromField("weight"),
+        holddown: fieldText("holddown"),
+        terminalType: fieldText("terminal-tp"),
+        assembly: fieldText("assy"),
+      };
+    });
+
+    const found = Object.values(specs).some((v) => v != null);
+
+    return { sku: String(sku).toUpperCase(), found, ...specs };
+  } finally {
+    await browser.close();
+  }
+}
+
+module.exports = { scrapePlate, scrapeProduct };
 
 // Allow running directly for local testing: node scrape.js MAGURU
 if (require.main === module) {
