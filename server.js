@@ -1,10 +1,13 @@
 // Small HTTP API wrapping the battery-town scraper.
 //
-// GET /scrape-plate?plate=ABC123
+// GET /scrape-plate?plate=ABC123[&vehicleIndex=0]
 // GET /scrape-product?sku=N70ZL/17
 // Header: x-api-key: <API_KEY>
 //
-// Response: { plate, found, vehicle, products } / { sku, found, ...specs }
+// Response: { plate, found, vehicle, stopStartWarning, products } — or, when
+// a plate matches more than one vehicle and vehicleIndex wasn't supplied:
+// { plate, found: false, disambiguation: true, vehicleOptions: [...] }.
+// / { sku, found, ...specs }
 
 const http = require("http");
 const { URL } = require("url");
@@ -67,8 +70,15 @@ const server = http.createServer(async (req, res) => {
       return send(res, 400, { error: "plate looks invalid" });
     }
 
+    // Optional: which vehicle to pick when a plate matches more than one
+    // (HCB's disambiguation list). Omitted on the first request; the
+    // frontend re-calls with this set once the customer/staff picks.
+    const vehicleIndexRaw = url.searchParams.get("vehicleIndex");
+    const vehicleIndex =
+      vehicleIndexRaw != null && vehicleIndexRaw !== "" ? parseInt(vehicleIndexRaw, 10) : null;
+
     try {
-      const result = await runQueued(() => scrapePlate(plate));
+      const result = await runQueued(() => scrapePlate(plate, { vehicleIndex }));
       return send(res, 200, result);
     } catch (err) {
       console.error("scrape failed for", plate, err);

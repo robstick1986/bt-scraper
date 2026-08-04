@@ -21,7 +21,34 @@ const { chromium } = require("playwright-core");
 const CHROMIUM_PATH =
   process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
-async function scrapePlate(plate, { headless = true } = {}) {
+// Mags & Tyres doesn't stock the "Ultra" brand line. On hcb.co.nz, every
+// Ultra-branded SKU is the same part number as its Endurant/Varta/etc.
+// equivalent with a trailing "U" (e.g. "N70ZL/17" vs "N70ZL/17U",
+// "DIN75AGM" vs "DIN75AGMU") — confirmed by cross-checking scraped `brand`
+// values in Supabase, which were all "ultra" for every SKU matching this
+// pattern. Filter these out at the source so they never reach the frontend,
+// never get cached, and never get re-scraped.
+function isExcludedUltraSku(sku) {
+  return /U$/i.test(String(sku || "").trim());
+}
+
+// Parses HCB's free-text "note" column (e.g. "Manual", "Auto ; Silver, 800
+// CCA", "With Stop/Start, Rstart Battery ; AGM AUX BATTERY") into structured
+// tags the frontend/API can reason about instead of just displaying as-is.
+// This matters because HCB's results are NOT always interchangeable
+// alternatives — for some vehicles they're split by transmission (Manual vs
+// Auto need different batteries) and/or by stop/start requirement, and
+// picking "row 1" blindly can recommend the wrong battery.
+function tagNote(noteText) {
+  const t = noteText || "";
+  let transmission = null;
+  if (/\bmanual\b/i.test(t)) transmission = "Manual";
+  else if (/\bauto\b/i.test(t)) transmission = "Auto";
+  const stopStart = /stop[\s/-]*start/i.test(t) || /\bAGM\b/i.test(t);
+  return { transmission, stopStart };
+}
+
+async function scrapePlate(plate, { headless = true, vehicleIndex = null } = {}) {
   const browser = await chromium.launch({
     executablePath: CHROMIUM_PATH,
     headless,
@@ -53,16 +80,69 @@ async function scrapePlate(plate, { headless = true } = {}) {
     const searchBtn = page.getByRole("button", { name: "Search", exact: true }).first();
     await searchBtn.click();
 
-    // Wait for either a result banner or a "not found" message to appear.
+    // Wait for either a result banner, a "not found" message, or HCB's
+    // vehicle-disambiguation list to appear. Some plates (typically utes /
+    // vans sold across several trims sharing one engine code, e.g. a Ford
+    // Ranger XL/XLT/WILDTRAK) don't resolve to a single vehicle — HCB shows
+    // a `.vs-plate-possiblity` list of matching vehicle descriptions instead
+    // and expects a click to pick one before showing any battery results.
     await page
       .waitForFunction(
         () => {
           const body = document.body.innerText || "";
-          return /Make:|not found|No results|invalid/i.test(body);
+          return (
+            /Make:|not found|No results|invalid/i.test(body) ||
+            document.querySelector(".vs-plate-possiblity")
+          );
         },
         { timeout: 20000 }
       )
       .catch(() => {});
+
+    const disambiguationLinks = await page.$$(".vs-plate-possiblity a");
+    if (disambiguationLinks.length > 0) {
+      if (vehicleIndex == null) {
+        // Caller hasn't told us which vehicle to pick yet — surface the
+        // options instead of guessing (guessing is exactly how the wrong
+        // battery gets recommended).
+        const vehicleOptions = await page.$$eval(".vs-plate-possiblity a", (links) =>
+          links.map((el) => el.textContent.trim())
+        );
+        return {
+          plate: plate.toUpperCase(),
+          found: false,
+          disambiguation: true,
+          vehicleOptions,
+          vehicle: null,
+          products: [],
+        };
+      }
+
+      const target = disambiguationLinks[vehicleIndex];
+      if (!target) {
+        return {
+          plate: plate.toUpperCase(),
+          found: false,
+          disambiguation: true,
+          vehicleOptions: await page.$$eval(".vs-plate-possiblity a", (links) =>
+            links.map((el) => el.textContent.trim())
+          ),
+          vehicle: null,
+          products: [],
+        };
+      }
+      await target.click();
+
+      await page
+        .waitForFunction(
+          () => {
+            const body = document.body.innerText || "";
+            return /Make:|not found|No results|invalid/i.test(body);
+          },
+          { timeout: 20000 }
+        )
+        .catch(() => {});
+    }
 
     // The vehicle summary banner (with "Make:") renders first; the battery
     // results table (`.vs-results-row`) is populated a beat later by a
@@ -75,6 +155,17 @@ async function scrapePlate(plate, { headless = true } = {}) {
     await page
       .waitForSelector(".vs-results-row", { timeout: 12000 })
       .catch(() => {});
+
+    // HCB shows a "Caution: this vehicle is fitted with start/stop
+    // technology and/or an Auxiliary battery..." modal (`.generic-modal
+    // .modal-body`) for stop/start-equipped vehicles. It renders a beat
+    // after the results table, so check for it after the wait above. This
+    // is the strongest signal we have that picking a plain (non-AGM/non-
+    // stop-start) row as "the" recommendation would be wrong.
+    await page.waitForTimeout(800);
+    const stopStartWarning = await page
+      .$eval(".generic-modal .modal-body", (el) => el.textContent.trim())
+      .catch(() => null);
 
     const bodyText = await page.evaluate(() => document.body.innerText);
 
@@ -137,7 +228,6 @@ async function scrapePlate(plate, { headless = true } = {}) {
         return {
           sku: sku ? sku.textContent.trim() : null,
           note: noteText || null,
-          stopStart: noteText ? /^With\b/i.test(noteText) : null,
           cca: ccaNum ? parseInt(ccaNum[1], 10) : null,
           technology: techText.replace(/^[:\s]+/, "").trim() || null,
           priceExGst: rrpMatch ? parseFloat(rrpMatch[1].replace(/,/g, "")) : null,
@@ -150,11 +240,19 @@ async function scrapePlate(plate, { headless = true } = {}) {
       return { vehicle, products };
     });
 
+    // Drop every "Ultra" branded row (SKU ends in "U") — we don't stock
+    // that line — and tag the rest with structured transmission/stop-start
+    // flags parsed from their note text (see tagNote above).
+    const filteredProducts = products
+      .filter((p) => !isExcludedUltraSku(p.sku))
+      .map((p) => ({ ...p, ...tagNote(p.note) }));
+
     return {
       plate: plate.toUpperCase(),
-      found: !!(vehicle && vehicle.make) || products.length > 0,
+      found: !!(vehicle && vehicle.make) || filteredProducts.length > 0,
       vehicle: vehicle && vehicle.make ? vehicle : null,
-      products,
+      stopStartWarning: stopStartWarning || null,
+      products: filteredProducts,
     };
   } finally {
     await browser.close();
@@ -175,6 +273,12 @@ async function scrapePlate(plate, { headless = true } = {}) {
 // challenge was observed on these pages, but we still drive a real browser
 // for consistency with the rest of this scraper.
 async function scrapeProduct(sku, { headless = true } = {}) {
+  // Never scrape (or let a caller cache) an Ultra-branded SKU — we don't
+  // stock that line. Short-circuit before even launching a browser.
+  if (isExcludedUltraSku(sku)) {
+    return { sku: String(sku).toUpperCase(), found: false, excluded: true };
+  }
+
   const slug = String(sku).toLowerCase().replace(/[^a-z0-9]/g, "");
   const browser = await chromium.launch({
     executablePath: CHROMIUM_PATH,
@@ -239,7 +343,7 @@ async function scrapeProduct(sku, { headless = true } = {}) {
   }
 }
 
-module.exports = { scrapePlate, scrapeProduct };
+module.exports = { scrapePlate, scrapeProduct, isExcludedUltraSku };
 
 // Allow running directly for local testing: node scrape.js MAGURU
 if (require.main === module) {
