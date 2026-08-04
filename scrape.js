@@ -64,7 +64,17 @@ async function scrapePlate(plate, { headless = true } = {}) {
       )
       .catch(() => {});
 
-    await page.waitForTimeout(1000);
+    // The vehicle summary banner (with "Make:") renders first; the battery
+    // results table (`.vs-results-row`) is populated a beat later by a
+    // separate call. A fixed short sleep here was intermittently winning
+    // the race and reading the DOM before any rows existed (returning a
+    // correct vehicle but an empty `products` array) — especially under
+    // Render's environment, which is slower/further from hcb.co.nz than a
+    // regular browser. Wait specifically for a result row (or give up after
+    // a generous timeout) instead of guessing a fixed delay.
+    await page
+      .waitForSelector(".vs-results-row", { timeout: 12000 })
+      .catch(() => {});
 
     const bodyText = await page.evaluate(() => document.body.innerText);
 
