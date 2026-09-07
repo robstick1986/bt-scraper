@@ -82,11 +82,11 @@ await page.goto("https://hcb.co.nz/", {
     await loginLink.click();
     await page.waitForTimeout(2500);
 
-    // Standard Drupal login form field names (never confirmed against the
-    // real logged-out page). If wrong, the catch block below logs every
-    // real input on the page so the next failure is diagnosable.
-    const nameInput = page.locator('input[name="name"]');
-    const passInput = page.locator('input[name="pass"]');
+    // This is an Auth0-hosted Universal Login page (hcb-technologies.auth0.com),
+    // not a native Drupal form (confirmed live via the diagnostic dump
+    // below). Real field names are "email" and "password".
+    const nameInput = page.locator('input[name="email"]');
+    const passInput = page.locator('input[name="password"]');
     try {
           await nameInput.waitFor({ state: "visible", timeout: 20000 });
     } catch (err) {
@@ -108,7 +108,7 @@ await page.goto("https://hcb.co.nz/", {
 
   await Promise.all([
     page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
-    page.locator('#edit-submit, input[type="submit"]').first().click(),
+          page.locator('button[type="submit"], input[type="submit"]').first().click(),
   ]);
 
   const bodyText = await page.evaluate(() => document.body.innerText);
