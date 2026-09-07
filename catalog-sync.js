@@ -72,14 +72,31 @@ async function loginToHcb(page) {
     timeout: 30000,
   });
 
-  // Standard Drupal login form field names (confirmed pattern: this site's
-  // logged-out state uses Drupal's default user/login route). If HCB ever
-  // changes their login theme, this is the first thing to re-check.
-  const nameInput = page.locator('input[name="name"]');
-  const passInput = page.locator('input[name="pass"]');
-  await nameInput.waitFor({ state: "visible", timeout: 15000 });
-  await nameInput.fill(HCB_USERNAME);
-  await passInput.fill(HCB_PASSWORD);
+await page.waitForTimeout(2500);
+
+    // Standard Drupal login form field names (never confirmed against the
+    // real logged-out page). If wrong, the catch block below logs every
+    // real input on the page so the next failure is diagnosable.
+    const nameInput = page.locator('input[name="name"]');
+    const passInput = page.locator('input[name="pass"]');
+    try {
+          await nameInput.waitFor({ state: "visible", timeout: 20000 });
+    } catch (err) {
+          const pageInfo = await page.evaluate(() => ({
+                  url: location.href,
+                  title: document.title,
+                  inputs: Array.from(document.querySelectorAll("input")).map((el) => ({
+                            name: el.name || null,
+                            id: el.id || null,
+                            type: el.type || null,
+                            placeholder: el.placeholder || null,
+                  })),
+          }));
+          log("LOGIN_FORM_NOT_FOUND", JSON.stringify(pageInfo, null, 2));
+          throw err;
+    }
+    await nameInput.fill(HCB_USERNAME);
+    await passInput.fill(HCB_PASSWORD);
 
   await Promise.all([
     page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
