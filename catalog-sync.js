@@ -67,12 +67,20 @@ async function loginToHcb(page) {
     throw new Error("HCB_USERNAME / HCB_PASSWORD env vars are not set â cannot log in");
   }
 
-  await page.goto("https://hcb.co.nz/user/login", {
-    waitUntil: "domcontentloaded",
-    timeout: 30000,
-  });
+await page.goto("https://hcb.co.nz/", {
+      waitUntil: "domcontentloaded",
+      timeout: 30000,
+});
+    await page.waitForTimeout(2500);
 
-await page.waitForTimeout(2500);
+    // Land on the login page via the "Log In" link in the header nav, like a
+        // real visitor, rather than requesting /user/login directly - a direct
+    // request came back with an empty title and zero <input> elements at
+    // all (confirmed live), which looks like a bot-protection block on that
+    // specific URL rather than a wrong CSS selector.
+    const loginLink = page.locator('a:has-text("Log In"), a:has-text("LOG IN")').first();
+    await loginLink.click();
+    await page.waitForTimeout(2500);
 
     // Standard Drupal login form field names (never confirmed against the
     // real logged-out page). If wrong, the catch block below logs every
