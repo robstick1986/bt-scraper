@@ -170,9 +170,30 @@ async function scrapeCatalogProduct(page, sku, productPath) {
     return { sku, found: false };
   }
 
-  // Price/stock render a beat after the page loads (confirmed live: not
-  // present in the initial DOM, appears ~2-3s later via AJAX).
-  await page.waitForTimeout(3000);
+  // Price/stock render a beat after the page loads via AJAX. A fixed
+  // sleep here caused a real bug (confirmed live, all 100 catalog rows
+  // affected): the price widget briefly shows a "$0.00" placeholder
+  // before the real price populates, and on Render's environment this
+  // sometimes took longer than the 3s sleep this used to be, so the
+  // placeholder "0.00" got scraped and stored as the real price. Poll for
+  // an actual non-zero price instead of guessing a fixed delay.
+  try {
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector(".uc-price");
+        if (!el) return false;
+        const m = el.textContent.trim().match(/([\d,]+\.\d{2})/);
+        if (!m) return false;
+        return parseFloat(m[1].replace(/,/g, "")) > 0;
+      },
+      { timeout: 12000 }
+    );
+  } catch {
+    // Fall through — the evaluate() below will see whatever's there
+    // (likely still "0.00" or empty), and the found:false check at the
+    // end of this function will correctly reject it rather than storing
+    // a bad price.
+  }
 
   const data = await page.evaluate(() => {
     function fieldText(cls) {
@@ -218,7 +239,9 @@ async function scrapeCatalogProduct(page, sku, productPath) {
     };
   });
 
-  return { sku, found: data.priceExGst != null, ...data };
+  // > 0, not just != null — a scraped "0.00" placeholder is exactly the
+  // bug this whole fix exists for, so it must never count as "found".
+  return { sku, found: data.priceExGst != null && data.priceExGst > 0, ...data };
 }
 
 // Pricing math kept identical to find-battery.js so search results and
