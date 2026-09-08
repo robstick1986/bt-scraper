@@ -103,6 +103,8 @@ async function loginToHcb() {
   }
   const loginUrl = loginHref.indexOf("http") === 0 ? loginHref : new URL(loginHref, "https://hcb.co.nz/").toString();
 
+  log("Auth0 login URL:", loginUrl.slice(0, 120) + "...");
+
   const afterLoginHtml = await scrapingBeeGet(loginUrl, {
     jsScenario: {
       instructions: [
@@ -110,12 +112,25 @@ async function loginToHcb() {
         { fill: ['input[name="email"]', HCB_USERNAME] },
         { fill: ['input[name="password"]', HCB_PASSWORD] },
         { click: 'button[type="submit"]' },
-        { wait: 4000 },
+        { wait: 6000 },
       ],
     },
   });
 
   if (!/logout|log out/i.test(afterLoginHtml)) {
+    const $after = cheerio.load(afterLoginHtml);
+    log(
+      "LOGIN_FORM_NOT_CONFIRMED - actual page state:",
+      JSON.stringify({
+        title: $after("title").text().trim(),
+        url: loginUrl.slice(0, 200),
+        bodyLength: afterLoginHtml.length,
+        hasEmailInput: $after('input[name="email"]').length > 0,
+        hasPasswordInput: $after('input[name="password"]').length > 0,
+        firstButtons: $after("button").slice(0, 5).map((_, el) => $after(el).text().trim()).get(),
+        bodySnippet: $after("body").text().trim().replace(/\s+/g, " ").slice(0, 400),
+      })
+    );
     throw new Error("LOGIN_FAILED - 'Logout' not found in page after submitting credentials");
   }
   log("Logged in to hcb.co.nz as", HCB_USERNAME, "(session " + SESSION_ID + ")");
