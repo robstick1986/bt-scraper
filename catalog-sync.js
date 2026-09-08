@@ -172,7 +172,31 @@ async function scrapeCatalogProduct(sku, productPath) {
   const url = productPath ? "https://hcb.co.nz" + productPath : null;
   if (!url) return { sku: sku, found: false };
 
-  const html = await scrapingBeeGet(url, { waitFor: ".uc-price", extraWaitMs: 2000 }).catch(function () {
+  // Same bug class as the original Playwright version: .uc-price exists
+  // in the DOM almost immediately but often still shows a "0.00"
+  // placeholder for several seconds before the real trade price loads
+  // via AJAX. A flat wait isn't reliable - poll in-page for an actual
+  // non-zero value (up to 10s) instead.
+  const html = await scrapingBeeGet(url, {
+    jsScenario: {
+      instructions: [
+        { wait_for: ".uc-price" },
+        {
+          evaluate:
+            "await new Promise((resolve) => { " +
+            "const start = Date.now(); " +
+            "const check = () => { " +
+            "const el = document.querySelector('.uc-price'); " +
+            "const m = el && el.textContent.match(/([\\d,]+\\.\\d{2})/); " +
+            "const val = m ? parseFloat(m[1].replace(/,/g, '')) : 0; " +
+            "if (val > 0 || Date.now() - start > 10000) { resolve(); return; } " +
+            "setTimeout(check, 300); " +
+            "}; check(); " +
+            "});",
+        },
+      ],
+    },
+  }).catch(function () {
     return "";
   });
   if (!html) return { sku: sku, found: false };
