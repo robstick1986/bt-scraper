@@ -77,6 +77,7 @@ async function scrapingBeeGet(url, opts) {
     render_js: "true",
     session_id: SESSION_ID,
     stealth_proxy: "true",
+    country_code: "nz", // Every confirmed working case tonight (Rob's incognito test, interactive testing) was from a genuine NZ connection - testing whether this is geo-fencing rather than (or in addition to) bot detection.
   });
   if (opts.waitFor) params.set("wait_for", opts.waitFor);
   if (opts.extraWaitMs) params.set("wait", String(opts.extraWaitMs));
