@@ -95,19 +95,19 @@ async function loginToHcb() {
     throw new Error("HCB_USERNAME / HCB_PASSWORD env vars are not set - cannot log in");
   }
 
-  const homeHtml = await scrapingBeeGet("https://hcb.co.nz/", { waitFor: "body" });
-  const $home = cheerio.load(homeHtml);
-  const loginHref = $home('a:contains("LOG IN"), a:contains("Log In")').first().attr("href");
-  if (!loginHref) {
-    throw new Error("LOGIN_LINK_NOT_FOUND - could not find a Log In link on the homepage");
-  }
-  const loginUrl = loginHref.indexOf("http") === 0 ? loginHref : new URL(loginHref, "https://hcb.co.nz/").toString();
-
-  log("Auth0 login URL:", loginUrl.slice(0, 120) + "...");
-
-  const afterLoginHtml = await scrapingBeeGet(loginUrl, {
+  // Single request/session, whole flow: load the homepage, click the real
+  // "Log In" link in-page (not a detached second request to its href -
+  // confirmed live that Auth0 rejects that as an invalid/expired OAuth
+  // state, silently bouncing back to the homepage rather than showing the
+  // login form at all), wait for the Auth0 redirect to land, fill and
+  // submit, wait for the final redirect back to hcb.co.nz to settle.
+  const afterLoginHtml = await scrapingBeeGet("https://hcb.co.nz/", {
     jsScenario: {
       instructions: [
+        {
+          evaluate:
+            "Array.from(document.querySelectorAll('a')).find(a => /log ?in/i.test(a.textContent))?.click();",
+        },
         { wait_for: 'input[name="email"]' },
         { fill: ['input[name="email"]', HCB_USERNAME] },
         { fill: ['input[name="password"]', HCB_PASSWORD] },
@@ -123,7 +123,6 @@ async function loginToHcb() {
       "LOGIN_FORM_NOT_CONFIRMED - actual page state:",
       JSON.stringify({
         title: $after("title").text().trim(),
-        url: loginUrl.slice(0, 200),
         bodyLength: afterLoginHtml.length,
         hasEmailInput: $after('input[name="email"]').length > 0,
         hasPasswordInput: $after('input[name="password"]').length > 0,
