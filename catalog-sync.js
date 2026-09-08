@@ -363,11 +363,97 @@ async function run() {
   );
 }
 
-if (require.main === module) {
-  run().catch(function (err) {
-    console.error("CATALOG_SYNC_FAILED", err);
-    process.exit(1);
+// One-off diagnostic: takes an actual screenshot of a single product
+// page (via ScrapingBee's screenshot mode, same session/login/stealth
+// settings as the real scrape) and uploads it to Supabase Storage so it
+// can be viewed directly - text-based diagnosis has been exhausted
+// (login confirmed working, category/stock/specs all extract fine,
+// price consistently fails across every approach tried), so seeing the
+// actual rendered page is the next real diagnostic step.
+async function diagnosticScreenshot(sku) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    throw new Error("SUPABASE_URL / SUPABASE_SERVICE_KEY env vars are not set");
+  }
+
+  await loginToHcb();
+
+  const listing = await walkCategoryListing();
+  const item = listing.find(function (i) {
+    return i.sku === sku;
   });
+  if (!item || !item.productPath) {
+    throw new Error("DIAGNOSTIC_SKU '" + sku + "' not found in category listing");
+  }
+  log("Found", sku, "at", item.productPath, "- taking screenshot...");
+
+  const url = "https://hcb.co.nz" + item.productPath;
+  const params = new URLSearchParams({
+    api_key: SCRAPINGBEE_API_KEY,
+    url: url,
+    render_js: "true",
+    session_id: SESSION_ID,
+    stealth_proxy: "true",
+    country_code: "nz",
+    screenshot: "true",
+    screenshot_full_page: "true",
+    wait: "5000",
+  });
+
+  const res = await fetch("https://app.scrapingbee.com/api/v1/?" + params.toString());
+  if (!res.ok) {
+    const detail = await res.text().catch(function () {
+      return "";
+    });
+    throw new Error("ScrapingBee screenshot request failed (" + res.status + "): " + detail.slice(0, 300));
+  }
+  const imageBuffer = Buffer.from(await res.arrayBuffer());
+  log("Screenshot captured:", imageBuffer.length, "bytes");
+
+  const bucketName = "diagnostics";
+  await fetch(SUPABASE_URL + "/storage/v1/bucket", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_SERVICE_KEY,
+      Authorization: "Bearer " + SUPABASE_SERVICE_KEY,
+    },
+    body: JSON.stringify({ id: bucketName, name: bucketName, public: true }),
+  }); // ignore result - fine if it already exists
+
+  const path = "price-diagnostic-" + sku.replace(/[^a-zA-Z0-9]/g, "_") + "-" + Date.now() + ".png";
+  const uploadRes = await fetch(SUPABASE_URL + "/storage/v1/object/" + bucketName + "/" + path, {
+    method: "POST",
+    headers: {
+      "Content-Type": "image/png",
+      apikey: SUPABASE_SERVICE_KEY,
+      Authorization: "Bearer " + SUPABASE_SERVICE_KEY,
+    },
+    body: imageBuffer,
+  });
+
+  if (!uploadRes.ok) {
+    const detail = await uploadRes.text().catch(function () {
+      return "";
+    });
+    throw new Error("Supabase Storage upload failed: " + uploadRes.status + " " + detail);
+  }
+
+  const publicUrl = SUPABASE_URL + "/storage/v1/object/public/" + bucketName + "/" + path;
+  log("DIAGNOSTIC_SCREENSHOT_URL:", publicUrl);
+}
+
+if (require.main === module) {
+  if (process.env.DIAGNOSTIC_SKU) {
+    diagnosticScreenshot(process.env.DIAGNOSTIC_SKU).catch(function (err) {
+      console.error("DIAGNOSTIC_FAILED", err);
+      process.exit(1);
+    });
+  } else {
+    run().catch(function (err) {
+      console.error("CATALOG_SYNC_FAILED", err);
+      process.exit(1);
+    });
+  }
 }
 
 module.exports = { run: run };
