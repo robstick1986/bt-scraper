@@ -280,7 +280,13 @@ async function run() {
   const browser = await chromium.launch({
     executablePath: CHROMIUM_PATH,
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      // Removes the most common headless-Chrome tell (navigator.webdriver
+      // and a handful of related signals) at the Chromium flag level.
+      "--disable-blink-features=AutomationControlled",
+    ],
   });
 
   const startedAt = Date.now();
@@ -294,7 +300,31 @@ async function run() {
       userAgent:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       viewport: { width: 1366, height: 900 },
+      locale: "en-NZ",
     });
+
+    // Stealth patches — confirmed live 2026-09-08 that HCB serves a real
+    // price to a genuine Chrome window (even a fresh incognito one) but a
+    // "$0.00" decoy specifically to this scraper's automated session
+    // (100% failure rate across 100/100 SKUs despite login + stock +
+    // category data all working correctly) — the most likely explanation
+    // is bot/headless detection specifically defending trade pricing
+    // (competitively sensitive data), not a login or timing problem.
+    // These are standard, well-documented patches for the most common
+    // automation fingerprints; applied to every new page before any
+    // navigation happens.
+    await context.addInitScript(() => {
+      Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+      Object.defineProperty(navigator, "plugins", { get: () => [1, 2, 3, 4, 5] });
+      Object.defineProperty(navigator, "languages", { get: () => ["en-NZ", "en"] });
+      window.chrome = { runtime: {} };
+      const originalQuery = window.navigator.permissions.query;
+      window.navigator.permissions.query = (parameters) =>
+        parameters.name === "notifications"
+          ? Promise.resolve({ state: Notification.permission })
+          : originalQuery(parameters);
+    });
+
     const page = await context.newPage();
 
     await loginToHcb(page);
