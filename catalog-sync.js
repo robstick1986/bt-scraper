@@ -101,6 +101,7 @@ async function scrapingBeeGet(url, opts) {
     // with session_id's "reuse the same proxy" promise. premium_proxy
     // is a lighter tier that should honour that promise more literally.
     premium_proxy: "true",
+    block_resources: "false",
     country_code: "nz",
     json_response: "true",
   });
@@ -486,6 +487,7 @@ async function diagnosticScreenshot(sku) {
     render_js: "true",
     session_id: SESSION_ID,
     premium_proxy: "true",
+    block_resources: "false",
     country_code: "nz",
     screenshot: "true",
     json_response: "true",
