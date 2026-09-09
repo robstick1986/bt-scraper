@@ -119,7 +119,19 @@ async function scrapingBeeGet(url, opts) {
     CAPTURED_COOKIES = data.cookies;
   }
 
-  return data.body || data.html || "";
+  const body = data.body || data.html || "";
+  if (!body) {
+    // Guessed field names ("body"/"html") were apparently wrong - dump
+    // the real top-level shape so this only needs diagnosing once.
+    log(
+      "JSON_RESPONSE_SHAPE_UNKNOWN - keys:",
+      JSON.stringify(Object.keys(data)),
+      "cookies field type/length:",
+      typeof data.cookies,
+      data.cookies ? String(data.cookies).length : 0
+    );
+  }
+  return body;
 }
 
 async function loginToHcb() {
@@ -174,14 +186,22 @@ async function walkCategoryListing() {
 
   while (pageNum < MAX_PAGES) {
     const url = "https://hcb.co.nz/" + CATEGORY_PATH + "?page=" + pageNum;
-    const html = await scrapingBeeGet(url, { waitFor: ".views-row" }).catch(function () {
-      return "";
-    });
+    // No silent catch-to-empty-string here anymore - that was masking a
+    // real ScrapingBee error as "0 rows, stop pagination" with zero
+    // visibility into why. Let genuine failures surface.
+    const html = await scrapingBeeGet(url, { waitFor: ".views-row" });
     const $ = cheerio.load(html);
     const rows = $(".views-row");
 
     if (rows.length === 0) {
-      log("Page " + pageNum + " had no rows - stopping pagination.");
+      log(
+        "Page " + pageNum + " had no rows - stopping pagination. HTML length:",
+        html.length,
+        "title:",
+        $("title").text().trim(),
+        "cookies sent (len):",
+        CAPTURED_COOKIES.length
+      );
       break;
     }
 
