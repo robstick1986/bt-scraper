@@ -89,7 +89,7 @@ async function scrapingBeeGet(url, opts) {
     api_key: SCRAPINGBEE_API_KEY,
     url: url,
     render_js: "true",
-    session_id: SESSION_ID,
+    session_id: opts.sessionId || SESSION_ID,
     // Switched from stealth_proxy: diagnosed live that every single
     // request was landing on a genuinely different Incapsula node
     // (a different incap_ses_* cookie almost every time), which meant
@@ -275,7 +275,21 @@ async function scrapeCatalogProduct(sku, productPath) {
   // product page. Auth0's redirect_uri preserves the originating page,
   // so after login this lands back on THIS SAME product page, already
   // authenticated - no dependency on any earlier request's cookies.
+  //
+  // Also confirmed live 2026-09-09: an isolated single-SKU diagnostic
+  // (DIN66) worked perfectly (real price, screenshot-verified) using
+  // this exact same login sequence, but the full 100-SKU production run
+  // failed on every single SKU it reached - all using the SAME shared
+  // SESSION_ID for every product's login. Most likely cause: repeated
+  // logins under one session_id look like the same visitor hammering
+  // the login form dozens of times, which is exactly the kind of
+  // pattern anti-abuse systems flag. Each product now gets its own
+  // fresh random session_id, so every login looks like an independent
+  // new visitor rather than a repeat of the same session.
+  const productSessionId = String(Math.floor(Math.random() * 1000000000));
+
   const html = await scrapingBeeGet(url, {
+    sessionId: productSessionId,
     jsScenario: {
       instructions: [
         {
