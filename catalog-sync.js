@@ -100,8 +100,7 @@ async function scrapingBeeGet(url, opts) {
     // (that's the evasion mechanism), which is fundamentally at odds
     // with session_id's "reuse the same proxy" promise. premium_proxy
     // is a lighter tier that should honour that promise more literally.
-    premium_proxy: "true",
-    block_resources: "false",
+    stealth_proxy: "true",
     country_code: "nz",
     json_response: "true",
   });
@@ -267,15 +266,33 @@ async function scrapeCatalogProduct(sku, productPath) {
   const url = productPath ? "https://hcb.co.nz" + productPath : null;
   if (!url) return { sku: sku, found: false };
 
-  // Same bug class as the original Playwright version: .uc-price exists
-  // in the DOM almost immediately but often still shows a "0.00"
-  // placeholder for several seconds before the real trade price loads
-  // via AJAX. A flat wait isn't reliable - poll in-page for an actual
-  // non-zero value (up to 10s) instead.
+  // Cross-request cookie/session persistence never worked reliably -
+  // diagnosed live that nearly every ScrapingBee request lands on a
+  // different Incapsula node, and a cookie captured on node A is
+  // worthless on node B, regardless of proxy tier (stealth_proxy,
+  // premium_proxy both showed this). So each product page request is
+  // now fully self-contained: log in fresh, directly from this exact
+  // product page. Auth0's redirect_uri preserves the originating page,
+  // so after login this lands back on THIS SAME product page, already
+  // authenticated - no dependency on any earlier request's cookies.
   const html = await scrapingBeeGet(url, {
     jsScenario: {
       instructions: [
+        {
+          evaluate:
+            "Array.from(document.querySelectorAll('a')).find(a => /log ?in/i.test(a.textContent))?.click();",
+        },
+        { wait_for: 'input[name="email"]' },
+        { fill: ['input[name="email"]', HCB_USERNAME] },
+        { fill: ['input[name="password"]', HCB_PASSWORD] },
+        { click: 'button[type="submit"]' },
+        { wait: 4000 },
         { wait_for: ".uc-price" },
+        // Same bug class as the original Playwright version: .uc-price
+        // exists in the DOM almost immediately but often still shows a
+        // "0.00" placeholder for several seconds before the real trade
+        // price loads via AJAX. A flat wait isn't reliable - poll
+        // in-page for an actual non-zero value (up to 10s) instead.
         {
           evaluate:
             "await new Promise((resolve) => { " +
@@ -380,8 +397,9 @@ async function run() {
   let skippedUltra = 0;
   let failed = 0;
 
-  await loginToHcb();
-
+  // Category listing is public - no login needed to walk it. Each
+  // product page now logs in fresh, self-contained, from that exact
+  // page (see scrapeCatalogProduct) - no upfront/shared login needed.
   log("Walking category listing:", CATEGORY_PATH);
   const listing = await walkCategoryListing();
   log("Category walk complete: " + listing.length + " total cards found.");
@@ -469,8 +487,7 @@ async function diagnosticScreenshot(sku) {
     throw new Error("SUPABASE_URL / SUPABASE_SERVICE_KEY env vars are not set");
   }
 
-  await loginToHcb();
-
+  // Category listing is public - no login needed to find the SKU's path.
   const listing = await walkCategoryListing();
   const item = listing.find(function (i) {
     return i.sku === sku;
@@ -478,7 +495,7 @@ async function diagnosticScreenshot(sku) {
   if (!item || !item.productPath) {
     throw new Error("DIAGNOSTIC_SKU '" + sku + "' not found in category listing");
   }
-  log("Found", sku, "at", item.productPath, "- taking screenshot...");
+  log("Found", sku, "at", item.productPath, "- logging in fresh from that page and taking screenshot...");
 
   const url = "https://hcb.co.nz" + item.productPath;
   const params = new URLSearchParams({
@@ -486,17 +503,24 @@ async function diagnosticScreenshot(sku) {
     url: url,
     render_js: "true",
     session_id: SESSION_ID,
-    premium_proxy: "true",
-    block_resources: "false",
+    stealth_proxy: "true",
     country_code: "nz",
     screenshot: "true",
     json_response: "true",
-    // Viewport-only, not full-page - a full-page screenshot is tall enough
-    // that Supabase's dashboard thumbnail squishes the top section (where
-    // the price/cart panel lives) into an unreadable sliver.
-    wait: "5000",
+    js_scenario: JSON.stringify({
+      instructions: [
+        {
+          evaluate:
+            "Array.from(document.querySelectorAll('a')).find(a => /log ?in/i.test(a.textContent))?.click();",
+        },
+        { wait_for: 'input[name="email"]' },
+        { fill: ['input[name="email"]', HCB_USERNAME] },
+        { fill: ['input[name="password"]', HCB_PASSWORD] },
+        { click: 'button[type="submit"]' },
+        { wait: 5000 },
+      ],
+    }),
   });
-  if (CAPTURED_COOKIES) params.set("cookies", CAPTURED_COOKIES);
 
   const res = await fetch("https://app.scrapingbee.com/api/v1/?" + params.toString());
   const raw = await res.text();
