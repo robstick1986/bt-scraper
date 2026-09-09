@@ -395,7 +395,9 @@ async function diagnosticScreenshot(sku) {
     stealth_proxy: "true",
     country_code: "nz",
     screenshot: "true",
-    screenshot_full_page: "true",
+    // Viewport-only, not full-page - a full-page screenshot is tall enough
+    // that Supabase's dashboard thumbnail squishes the top section (where
+    // the price/cart panel lives) into an unreadable sliver.
     wait: "5000",
   });
 
