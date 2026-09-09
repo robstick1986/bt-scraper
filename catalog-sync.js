@@ -65,6 +65,20 @@ function log() {
 
 const SESSION_ID = String(Math.floor(Math.random() * 1000000000));
 
+// ScrapingBee's session_id only pins the same proxy IP across requests -
+// confirmed via their own Python SDK docs ("session_id: Reuse the same
+// proxy across requests"). It does NOT persist cookies/login state the
+// way a real browser session would. Every scrapingBeeGet() call is a
+// fresh browser instance server-side. Diagnosed live 2026-09-09: a
+// screenshot taken minutes after a successful login still showed a
+// logged-out page ("LOG IN" button visible, no account/logout link) -
+// this is why every price attempt failed despite login "succeeding".
+// Fix: request json_response=true (ScrapingBee's own blog post on
+// building a login bot uses exactly this pattern), which returns cookies
+// explicitly in the JSON body, then forward them via the `cookies` param
+// on every later request.
+let CAPTURED_COOKIES = "";
+
 async function scrapingBeeGet(url, opts) {
   opts = opts || {};
   if (!SCRAPINGBEE_API_KEY) {
@@ -77,18 +91,35 @@ async function scrapingBeeGet(url, opts) {
     render_js: "true",
     session_id: SESSION_ID,
     stealth_proxy: "true",
-    country_code: "nz", // Every confirmed working case tonight (Rob's incognito test, interactive testing) was from a genuine NZ connection - testing whether this is geo-fencing rather than (or in addition to) bot detection.
+    country_code: "nz",
+    json_response: "true",
   });
   if (opts.waitFor) params.set("wait_for", opts.waitFor);
   if (opts.extraWaitMs) params.set("wait", String(opts.extraWaitMs));
   if (opts.jsScenario) params.set("js_scenario", JSON.stringify(opts.jsScenario));
+  if (CAPTURED_COOKIES) params.set("cookies", CAPTURED_COOKIES);
 
   const res = await fetch("https://app.scrapingbee.com/api/v1/?" + params.toString());
-  const html = await res.text();
+  const raw = await res.text();
   if (!res.ok) {
-    throw new Error("ScrapingBee request failed (" + res.status + "): " + html.slice(0, 300));
+    throw new Error("ScrapingBee request failed (" + res.status + "): " + raw.slice(0, 300));
   }
-  return html;
+
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch (e) {
+    throw new Error("ScrapingBee json_response did not return valid JSON: " + raw.slice(0, 300));
+  }
+
+  if (data.cookies) {
+    // ScrapingBee's own cookie string for this response - overwrite
+    // rather than merge, since it already represents the full current
+    // cookie jar for this proxy/session at the time of the request.
+    CAPTURED_COOKIES = data.cookies;
+  }
+
+  return data.body || data.html || "";
 }
 
 async function loginToHcb() {
@@ -133,7 +164,7 @@ async function loginToHcb() {
     );
     throw new Error("LOGIN_FAILED - 'Logout' not found in page after submitting credentials");
   }
-  log("Logged in to hcb.co.nz as", HCB_USERNAME, "(session " + SESSION_ID + ")");
+  log("Logged in to hcb.co.nz as", HCB_USERNAME, "- captured cookie length:", CAPTURED_COOKIES.length);
 }
 
 async function walkCategoryListing() {
@@ -395,20 +426,24 @@ async function diagnosticScreenshot(sku) {
     stealth_proxy: "true",
     country_code: "nz",
     screenshot: "true",
+    json_response: "true",
     // Viewport-only, not full-page - a full-page screenshot is tall enough
     // that Supabase's dashboard thumbnail squishes the top section (where
     // the price/cart panel lives) into an unreadable sliver.
     wait: "5000",
   });
+  if (CAPTURED_COOKIES) params.set("cookies", CAPTURED_COOKIES);
 
   const res = await fetch("https://app.scrapingbee.com/api/v1/?" + params.toString());
+  const raw = await res.text();
   if (!res.ok) {
-    const detail = await res.text().catch(function () {
-      return "";
-    });
-    throw new Error("ScrapingBee screenshot request failed (" + res.status + "): " + detail.slice(0, 300));
+    throw new Error("ScrapingBee screenshot request failed (" + res.status + "): " + raw.slice(0, 300));
   }
-  const imageBuffer = Buffer.from(await res.arrayBuffer());
+  const data = JSON.parse(raw);
+  if (!data.screenshot) {
+    throw new Error("ScrapingBee json_response had no screenshot field: " + raw.slice(0, 300));
+  }
+  const imageBuffer = Buffer.from(data.screenshot, "base64");
   log("Screenshot captured:", imageBuffer.length, "bytes");
 
   const bucketName = "diagnostics";
