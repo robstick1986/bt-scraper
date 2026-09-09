@@ -286,13 +286,19 @@ async function scrapeCatalogProduct(sku, productPath) {
         { fill: ['input[name="email"]', HCB_USERNAME] },
         { fill: ['input[name="password"]', HCB_PASSWORD] },
         { click: 'button[type="submit"]' },
-        { wait: 4000 },
-        { wait_for: ".uc-price" },
+        // Diagnostic screenshot (confirmed working, real price rendered)
+        // used a flat 5s wait after login with no wait_for(".uc-price")
+        // gate at all. Adding that gate here caused every single SKU in
+        // the first full production run to fail - most likely its own
+        // internal timeout was too short and aborted the scenario before
+        // the post-redirect price AJAX had settled. Removed; go straight
+        // from the same flat wait into the price-value poll instead.
+        { wait: 5000 },
         // Same bug class as the original Playwright version: .uc-price
         // exists in the DOM almost immediately but often still shows a
         // "0.00" placeholder for several seconds before the real trade
         // price loads via AJAX. A flat wait isn't reliable - poll
-        // in-page for an actual non-zero value (up to 10s) instead.
+        // in-page for an actual non-zero value (up to 15s) instead.
         {
           evaluate:
             "await new Promise((resolve) => { " +
@@ -301,7 +307,7 @@ async function scrapeCatalogProduct(sku, productPath) {
             "const el = document.querySelector('.uc-price'); " +
             "const m = el && el.textContent.match(/([\\d,]+\\.\\d{2})/); " +
             "const val = m ? parseFloat(m[1].replace(/,/g, '')) : 0; " +
-            "if (val > 0 || Date.now() - start > 10000) { resolve(); return; } " +
+            "if (val > 0 || Date.now() - start > 15000) { resolve(); return; } " +
             "setTimeout(check, 300); " +
             "}; check(); " +
             "});",
