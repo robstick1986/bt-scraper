@@ -90,7 +90,17 @@ async function scrapingBeeGet(url, opts) {
     url: url,
     render_js: "true",
     session_id: SESSION_ID,
-    stealth_proxy: "true",
+    // Switched from stealth_proxy: diagnosed live that every single
+    // request was landing on a genuinely different Incapsula node
+    // (a different incap_ses_* cookie almost every time), which meant
+    // the login cookie captured from one node was never valid on the
+    // next - explains why login always "succeeded" but every later
+    // request was still logged out regardless of cookie forwarding.
+    // Stealth proxies are built for aggressive IP/session rotation
+    // (that's the evasion mechanism), which is fundamentally at odds
+    // with session_id's "reuse the same proxy" promise. premium_proxy
+    // is a lighter tier that should honour that promise more literally.
+    premium_proxy: "true",
     country_code: "nz",
     json_response: "true",
   });
@@ -475,7 +485,7 @@ async function diagnosticScreenshot(sku) {
     url: url,
     render_js: "true",
     session_id: SESSION_ID,
-    stealth_proxy: "true",
+    premium_proxy: "true",
     country_code: "nz",
     screenshot: "true",
     json_response: "true",
