@@ -442,11 +442,32 @@ async function run() {
       "(skipped " + skippedUltra + " Ultra-branded, " + skippedNonStarting + " non-starting-battery)."
   );
 
+  // Controlled test mode: set MAX_PRODUCTS to cap how many SKUs this run
+  // processes (e.g. for a small paced test batch), and REQUEST_DELAY_MS
+  // to add a pause between each product's login attempt. Both no-op
+  // (unlimited, 0ms) when unset, so normal production runs are
+  // unaffected once this test confirms (or rules out) request pacing as
+  // the fix.
+  const maxProducts = process.env.MAX_PRODUCTS ? parseInt(process.env.MAX_PRODUCTS, 10) : Infinity;
+  const requestDelayMs = process.env.REQUEST_DELAY_MS ? parseInt(process.env.REQUEST_DELAY_MS, 10) : 0;
+  const testCandidates = candidates.slice(0, maxProducts);
+  if (testCandidates.length !== candidates.length) {
+    log("MAX_PRODUCTS set - testing only " + testCandidates.length + " of " + candidates.length + " candidates.");
+  }
+  if (requestDelayMs > 0) {
+    log("REQUEST_DELAY_MS set - pacing " + requestDelayMs + "ms between each product.");
+  }
+
   const batch = [];
   const BATCH_SIZE = 20;
 
-  for (const item of candidates) {
+  for (const item of testCandidates) {
     try {
+      if (requestDelayMs > 0) {
+        await new Promise(function (resolve) {
+          setTimeout(resolve, requestDelayMs);
+        });
+      }
       const product = await scrapeCatalogProduct(item.sku, item.productPath);
       if (!product.found) {
         log("No price found for " + item.sku + " - skipping (likely still bot-blocked, discontinued, or hidden).");
@@ -475,7 +496,7 @@ async function run() {
       if (batch.length >= BATCH_SIZE) {
         await upsertCatalogRows(batch.splice(0, batch.length));
         upserted += BATCH_SIZE;
-        log("Upserted " + upserted + "/" + candidates.length + "...");
+        log("Upserted " + upserted + "/" + testCandidates.length + "...");
       }
     } catch (err) {
       log("ERROR scraping " + item.sku + ":", err.message || err);
