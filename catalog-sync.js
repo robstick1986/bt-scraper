@@ -113,10 +113,13 @@ async function scrapingBeeGet(url, opts) {
   }
 
   if (data.cookies) {
-    // ScrapingBee's own cookie string for this response - overwrite
-    // rather than merge, since it already represents the full current
-    // cookie jar for this proxy/session at the time of the request.
-    CAPTURED_COOKIES = data.cookies;
+    // Log the raw value once, unconditionally - a previous run's error
+    // ("Could not parse Cookie string, should be name_1=value1;name_2=value2")
+    // proved whatever format this actually is wasn't being reformatted
+    // correctly. Seeing the real value beats guessing at the shape again.
+    log("RAW_COOKIES_FROM_SCRAPINGBEE (" + typeof data.cookies + "):", JSON.stringify(data.cookies).slice(0, 500));
+
+    CAPTURED_COOKIES = normalizeCookies(data.cookies);
   }
 
   const body = data.body || data.html || "";
@@ -132,6 +135,35 @@ async function scrapingBeeGet(url, opts) {
     );
   }
   return body;
+}
+
+// ScrapingBee requires cookies as exactly "name_1=value1;name_2=value2" -
+// no spaces, semicolon-separated. Their own `cookies` response field
+// might come back as that same string, as an array of {name, value}
+// objects, or as a plain {name: value} map - normalize any of those into
+// the one format they'll actually accept, rather than assuming a shape.
+function normalizeCookies(raw) {
+  let pairs = [];
+  if (typeof raw === "string") {
+    pairs = raw
+      .split(";")
+      .map(function (p) {
+        return p.trim();
+      })
+      .filter(Boolean);
+  } else if (Array.isArray(raw)) {
+    pairs = raw
+      .map(function (c) {
+        if (c && typeof c === "object" && "name" in c) return c.name + "=" + c.value;
+        return null;
+      })
+      .filter(Boolean);
+  } else if (raw && typeof raw === "object") {
+    pairs = Object.keys(raw).map(function (k) {
+      return k + "=" + raw[k];
+    });
+  }
+  return pairs.join(";");
 }
 
 async function loginToHcb() {
