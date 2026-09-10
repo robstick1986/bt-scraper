@@ -334,11 +334,17 @@ async function scrapeCatalogProduct(sku, productPath) {
         { click: 'button[type="submit"]' },
         { wait: 5000 },
         // Confirmed live 2026-09-11: login itself is genuinely fixed
-        // (isLoggedIn:true) - the ONLY remaining issue is the exact
-        // same bug class as the very first version of this scraper:
-        // .uc-price exists and shows "$0.00" as a placeholder for a
-        // few seconds before the real price loads via AJAX. Poll for
-        // an actual non-zero value instead of trusting the flat wait.
+        // (isLoggedIn:true), but even a full 15s poll never saw the
+        // price go non-zero - the in-place Auth0 redirect's resulting
+        // DOM/JS state doesn't seem to trigger the same price-loading
+        // AJAX a genuine fresh page load would. Force one real reload
+        // now that the session's cookies are valid, before polling.
+        { evaluate: "window.location.reload();" },
+        { wait: 3000 },
+        // Same bug class as the original Playwright version: .uc-price
+        // exists and shows "$0.00" as a placeholder for a few seconds
+        // before the real trade price loads via AJAX. Poll for an
+        // actual non-zero value instead of trusting a flat wait.
         {
           evaluate:
             "await new Promise((resolve) => { " +
