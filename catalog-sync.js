@@ -294,20 +294,15 @@ async function scrapeCatalogProduct(sku, productPath) {
   // so after login this lands back on THIS SAME product page, already
   // authenticated - no dependency on any earlier request's cookies.
   //
-  // Also confirmed live 2026-09-09: an isolated single-SKU diagnostic
-  // (DIN66) worked perfectly (real price, screenshot-verified) using
-  // this exact same login sequence, but the full 100-SKU production run
-  // failed on every single SKU it reached - all using the SAME shared
-  // SESSION_ID for every product's login. Most likely cause: repeated
-  // logins under one session_id look like the same visitor hammering
-  // the login form dozens of times, which is exactly the kind of
-  // pattern anti-abuse systems flag. Each product now gets its own
-  // fresh random session_id, so every login looks like an independent
-  // new visitor rather than a repeat of the same session.
-  const productSessionId = String(Math.floor(Math.random() * 1000000000));
-
+  // Confirmed live 2026-09-10: an isolated single-SKU test of DIN66
+  // through THIS function (fresh per-product session_id + active price
+  // polling) still failed, even though diagnosticScreenshot() succeeds
+  // for the exact same SKU every time. The only differences between the
+  // two: diagnosticScreenshot uses the shared SESSION_ID (already
+  // "warmed up" by 20 prior category-page requests) and a flat 5s wait
+  // with no active polling. Matching that exact working pattern here
+  // instead of the two changes that were only ever guesses.
   const html = await scrapingBeeGet(url, {
-    sessionId: productSessionId,
     jsScenario: {
       instructions: [
         {
@@ -318,32 +313,7 @@ async function scrapeCatalogProduct(sku, productPath) {
         { fill: ['input[name="email"]', HCB_USERNAME] },
         { fill: ['input[name="password"]', HCB_PASSWORD] },
         { click: 'button[type="submit"]' },
-        // Diagnostic screenshot (confirmed working, real price rendered)
-        // used a flat 5s wait after login with no wait_for(".uc-price")
-        // gate at all. Adding that gate here caused every single SKU in
-        // the first full production run to fail - most likely its own
-        // internal timeout was too short and aborted the scenario before
-        // the post-redirect price AJAX had settled. Removed; go straight
-        // from the same flat wait into the price-value poll instead.
         { wait: 5000 },
-        // Same bug class as the original Playwright version: .uc-price
-        // exists in the DOM almost immediately but often still shows a
-        // "0.00" placeholder for several seconds before the real trade
-        // price loads via AJAX. A flat wait isn't reliable - poll
-        // in-page for an actual non-zero value (up to 15s) instead.
-        {
-          evaluate:
-            "await new Promise((resolve) => { " +
-            "const start = Date.now(); " +
-            "const check = () => { " +
-            "const el = document.querySelector('.uc-price'); " +
-            "const m = el && el.textContent.match(/([\\d,]+\\.\\d{2})/); " +
-            "const val = m ? parseFloat(m[1].replace(/,/g, '')) : 0; " +
-            "if (val > 0 || Date.now() - start > 15000) { resolve(); return; } " +
-            "setTimeout(check, 300); " +
-            "}; check(); " +
-            "});",
-        },
       ],
     },
   }).catch(function () {
