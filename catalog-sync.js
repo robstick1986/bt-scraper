@@ -110,10 +110,27 @@ async function scrapingBeeGet(url, opts) {
   if (opts.jsScenario) params.set("js_scenario", JSON.stringify(opts.jsScenario));
   if (CAPTURED_COOKIES) params.set("cookies", CAPTURED_COOKIES);
 
-  const res = await fetch("https://app.scrapingbee.com/api/v1/?" + params.toString());
-  const raw = await res.text();
-  if (!res.ok) {
-    throw new Error("ScrapingBee request failed (" + res.status + "): " + raw.slice(0, 300));
+  // ScrapingBee's own docs: "it's inevitable that some [requests] will
+  // fail... the API will return a 500 status code and won't charge you
+  // for the request" - this is documented, expected, occasional
+  // behaviour for hard-to-scrape sites (exactly why stealth_proxy exists),
+  // not a bug on our end. Their own recommended fix is a retry loop.
+  // Only retry on 500 - a 401 (quota) or 400 (bad request) retrying
+  // won't help and just wastes time.
+  const MAX_RETRIES = 4;
+  let raw = "";
+  let res;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    res = await fetch("https://app.scrapingbee.com/api/v1/?" + params.toString());
+    raw = await res.text();
+    if (res.ok) break;
+    if (res.status !== 500 || attempt === MAX_RETRIES) {
+      throw new Error("ScrapingBee request failed (" + res.status + "): " + raw.slice(0, 300));
+    }
+    log("ScrapingBee 500 (attempt " + attempt + "/" + MAX_RETRIES + ") - retrying:", raw.slice(0, 150));
+    await new Promise(function (resolve) {
+      setTimeout(resolve, 2000 * attempt);
+    });
   }
 
   let data;
