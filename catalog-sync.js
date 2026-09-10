@@ -109,6 +109,13 @@ async function scrapingBeeGet(url, opts) {
   if (opts.extraWaitMs) params.set("wait", String(opts.extraWaitMs));
   if (opts.jsScenario) params.set("js_scenario", JSON.stringify(opts.jsScenario));
   if (CAPTURED_COOKIES) params.set("cookies", CAPTURED_COOKIES);
+  // Testing whether requesting a screenshot forces ScrapingBee to wait
+  // for the page to be visually painted/stable before returning - the
+  // one remaining real difference between diagnosticScreenshot (works)
+  // and scrapeCatalogProduct (fails), even after matching every other
+  // parameter exactly. Discarded, just used for its possible side effect
+  // on wait behaviour.
+  if (opts.wantScreenshot) params.set("screenshot", "true");
 
   // ScrapingBee's own docs: "it's inevitable that some [requests] will
   // fail... the API will return a 500 status code and won't charge you
@@ -303,6 +310,7 @@ async function scrapeCatalogProduct(sku, productPath) {
   // with no active polling. Matching that exact working pattern here
   // instead of the two changes that were only ever guesses.
   const html = await scrapingBeeGet(url, {
+    wantScreenshot: true,
     jsScenario: {
       instructions: [
         {
