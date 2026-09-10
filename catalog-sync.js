@@ -468,7 +468,24 @@ async function run() {
   // the fix.
   const maxProducts = process.env.MAX_PRODUCTS ? parseInt(process.env.MAX_PRODUCTS, 10) : Infinity;
   const requestDelayMs = process.env.REQUEST_DELAY_MS ? parseInt(process.env.REQUEST_DELAY_MS, 10) : 0;
-  const testCandidates = candidates.slice(0, maxProducts);
+  // TARGET_SKUS (comma-separated) tests specific known SKUs directly
+  // through the real scrape path, instead of whichever ones happen to
+  // come first alphabetically (which are often non-starting-battery
+  // types with no real listed price at all, giving a false failure).
+  const targetSkus = process.env.TARGET_SKUS
+    ? process.env.TARGET_SKUS.split(",").map(function (s) {
+        return s.trim().toUpperCase();
+      })
+    : null;
+  const filteredCandidates = targetSkus
+    ? candidates.filter(function (c) {
+        return targetSkus.indexOf(c.sku.toUpperCase()) !== -1;
+      })
+    : candidates;
+  const testCandidates = filteredCandidates.slice(0, maxProducts);
+  if (targetSkus) {
+    log("TARGET_SKUS set - testing:", testCandidates.map(function (c) { return c.sku; }).join(", "));
+  }
   if (testCandidates.length !== candidates.length) {
     log("MAX_PRODUCTS set - testing only " + testCandidates.length + " of " + candidates.length + " candidates.");
   }
