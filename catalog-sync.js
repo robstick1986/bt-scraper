@@ -347,6 +347,27 @@ async function scrapeCatalogProduct(sku, productPath) {
   const priceText = $(".uc-price").first().text().trim();
   const priceMatch = priceText.match(/([\d,]+\.\d{2})/);
   const priceExGst = priceMatch ? parseFloat(priceMatch[1].replace(/,/g, "")) : null;
+  const found_ = priceExGst != null && priceExGst > 0;
+
+  if (!found_) {
+    // Every theory tested tonight (session strategy, wait timing,
+    // screenshot param) has failed to explain why this differs from
+    // diagnosticScreenshot, which works reliably for the same SKUs.
+    // Never actually looked at what's really in the page when this
+    // happens - dump it directly instead of guessing again.
+    const cartHtml = $(".uc-price").first().parent().html();
+    const isLoggedIn = /logout|log out/i.test(html);
+    log(
+      "PRICE_NOT_FOUND_DIAGNOSTIC for " + sku + ":",
+      JSON.stringify({
+        isLoggedIn: isLoggedIn,
+        priceElementCount: $(".uc-price").length,
+        priceElementText: priceText.slice(0, 200),
+        cartAreaHtml: (cartHtml || "(no .uc-price parent found)").slice(0, 800),
+        htmlLength: html.length,
+      })
+    );
+  }
 
   let branchStock = null;
   let nationalStock = null;
