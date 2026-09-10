@@ -322,7 +322,6 @@ async function scrapeCatalogProduct(sku, productPath) {
   // with no active polling. Matching that exact working pattern here
   // instead of the two changes that were only ever guesses.
   const html = await scrapingBeeGet(url, {
-    wantScreenshot: true,
     jsScenario: {
       instructions: [
         {
@@ -334,6 +333,25 @@ async function scrapeCatalogProduct(sku, productPath) {
         { fill: ['input[name="password"]', HCB_PASSWORD] },
         { click: 'button[type="submit"]' },
         { wait: 5000 },
+        // Confirmed live 2026-09-11: login itself is genuinely fixed
+        // (isLoggedIn:true) - the ONLY remaining issue is the exact
+        // same bug class as the very first version of this scraper:
+        // .uc-price exists and shows "$0.00" as a placeholder for a
+        // few seconds before the real price loads via AJAX. Poll for
+        // an actual non-zero value instead of trusting the flat wait.
+        {
+          evaluate:
+            "await new Promise((resolve) => { " +
+            "const start = Date.now(); " +
+            "const check = () => { " +
+            "const el = document.querySelector('.uc-price'); " +
+            "const m = el && el.textContent.match(/([\\d,]+\\.\\d{2})/); " +
+            "const val = m ? parseFloat(m[1].replace(/,/g, '')) : 0; " +
+            "if (val > 0 || Date.now() - start > 15000) { resolve(); return; } " +
+            "setTimeout(check, 300); " +
+            "}; check(); " +
+            "});",
+        },
       ],
     },
   }).catch(function () {
