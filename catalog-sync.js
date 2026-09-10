@@ -291,6 +291,18 @@ async function scrapeCatalogProduct(sku, productPath) {
   const url = productPath ? "https://hcb.co.nz" + productPath : null;
   if (!url) return { sku: sku, found: false };
 
+  // REAL BUG FOUND 2026-09-11 via direct diagnostic dump (isLoggedIn:
+  // false on every single attempt, including this exact known-good SKU):
+  // scrapingBeeGet() auto-forwards CAPTURED_COOKIES, which gets
+  // overwritten by EVERY call including the 20 public category-listing
+  // page requests that always run first. By the time we reach a
+  // product page, we're sending stale, unauthenticated tracking
+  // cookies from the category walk into what should be a completely
+  // fresh login attempt - diagnosticScreenshot() never had this bug
+  // because it builds its own raw request from scratch and never
+  // forwards CAPTURED_COOKIES at all. Clear it before logging in.
+  CAPTURED_COOKIES = "";
+
   // Cross-request cookie/session persistence never worked reliably -
   // diagnosed live that nearly every ScrapingBee request lands on a
   // different Incapsula node, and a cookie captured on node A is
