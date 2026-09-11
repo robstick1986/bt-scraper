@@ -291,38 +291,29 @@ async function scrapeCatalogProduct(sku, productPath) {
   const url = productPath ? "https://hcb.co.nz" + productPath : null;
   if (!url) return { sku: sku, found: false };
 
-  // REAL BUG FOUND 2026-09-11 via direct diagnostic dump (isLoggedIn:
-  // false on every single attempt, including this exact known-good SKU):
-  // scrapingBeeGet() auto-forwards CAPTURED_COOKIES, which gets
-  // overwritten by EVERY call including the 20 public category-listing
-  // page requests that always run first. By the time we reach a
-  // product page, we're sending stale, unauthenticated tracking
-  // cookies from the category walk into what should be a completely
-  // fresh login attempt - diagnosticScreenshot() never had this bug
-  // because it builds its own raw request from scratch and never
-  // forwards CAPTURED_COOKIES at all. Clear it before logging in.
-  CAPTURED_COOKIES = "";
-
-  // Cross-request cookie/session persistence never worked reliably -
-  // diagnosed live that nearly every ScrapingBee request lands on a
-  // different Incapsula node, and a cookie captured on node A is
-  // worthless on node B, regardless of proxy tier (stealth_proxy,
-  // premium_proxy both showed this). So each product page request is
-  // now fully self-contained: log in fresh, directly from this exact
-  // product page. Auth0's redirect_uri preserves the originating page,
-  // so after login this lands back on THIS SAME product page, already
-  // authenticated - no dependency on any earlier request's cookies.
-  //
-  // Confirmed live 2026-09-10: an isolated single-SKU test of DIN66
-  // through THIS function (fresh per-product session_id + active price
-  // polling) still failed, even though diagnosticScreenshot() succeeds
-  // for the exact same SKU every time. The only differences between the
-  // two: diagnosticScreenshot uses the shared SESSION_ID (already
-  // "warmed up" by 20 prior category-page requests) and a flat 5s wait
-  // with no active polling. Matching that exact working pattern here
-  // instead of the two changes that were only ever guesses.
-  const html = await scrapingBeeGet(url, {
-    jsScenario: {
+  // REWRITTEN 2026-09-11: every attempt to match this function to
+  // diagnosticScreenshot() by editing its parameters one at a time
+  // still failed (isLoggedIn:true but price stuck at $0.00), even
+  // after eliminating every difference found by inspection - session
+  // strategy, cookies, wait timing, even a forced reload. Meanwhile
+  // diagnosticScreenshot() itself, completely unmodified, still works
+  // reliably today (confirmed live, real price). Rather than keep
+  // guessing at parameter differences, this now uses the exact same
+  // raw fetch call diagnosticScreenshot makes - not the shared
+  // scrapingBeeGet() helper - to guarantee there is no remaining,
+  // hard-to-spot difference in the helper's own logic (retry loop,
+  // cookie normalization side effects, etc.) interfering.
+  const params = new URLSearchParams({
+    api_key: SCRAPINGBEE_API_KEY,
+    url: url,
+    render_js: "true",
+    session_id: SESSION_ID,
+    stealth_proxy: "true",
+    block_resources: "false",
+    country_code: "nz",
+    screenshot: "true",
+    json_response: "true",
+    js_scenario: JSON.stringify({
       instructions: [
         {
           evaluate:
@@ -333,36 +324,21 @@ async function scrapeCatalogProduct(sku, productPath) {
         { fill: ['input[name="password"]', HCB_PASSWORD] },
         { click: 'button[type="submit"]' },
         { wait: 5000 },
-        // Confirmed live 2026-09-11: login itself is genuinely fixed
-        // (isLoggedIn:true), but even a full 15s poll never saw the
-        // price go non-zero - the in-place Auth0 redirect's resulting
-        // DOM/JS state doesn't seem to trigger the same price-loading
-        // AJAX a genuine fresh page load would. Force one real reload
-        // now that the session's cookies are valid, before polling.
-        { evaluate: "window.location.reload();" },
-        { wait: 3000 },
-        // Same bug class as the original Playwright version: .uc-price
-        // exists and shows "$0.00" as a placeholder for a few seconds
-        // before the real trade price loads via AJAX. Poll for an
-        // actual non-zero value instead of trusting a flat wait.
-        {
-          evaluate:
-            "await new Promise((resolve) => { " +
-            "const start = Date.now(); " +
-            "const check = () => { " +
-            "const el = document.querySelector('.uc-price'); " +
-            "const m = el && el.textContent.match(/([\\d,]+\\.\\d{2})/); " +
-            "const val = m ? parseFloat(m[1].replace(/,/g, '')) : 0; " +
-            "if (val > 0 || Date.now() - start > 15000) { resolve(); return; } " +
-            "setTimeout(check, 300); " +
-            "}; check(); " +
-            "});",
-        },
       ],
-    },
-  }).catch(function () {
-    return "";
+    }),
   });
+
+  let html = "";
+  try {
+    const res = await fetch("https://app.scrapingbee.com/api/v1/?" + params.toString());
+    const raw = await res.text();
+    if (res.ok) {
+      const data = JSON.parse(raw);
+      html = data.body || data.html || "";
+    }
+  } catch (e) {
+    html = "";
+  }
   if (!html) return { sku: sku, found: false };
 
   const $ = cheerio.load(html);
