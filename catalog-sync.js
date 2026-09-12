@@ -362,8 +362,12 @@ async function scrapeCatalogProduct(sku, productPath) {
         $dbg(".uc-price").length +
         "\npriceElementText: " +
         JSON.stringify(priceEl.text().trim()) +
+        "\ntitle: " +
+        JSON.stringify($dbg("title").text().trim()) +
         "\npriceAreaHTML:\n" +
         (priceEl.parent().html() || "(no parent found)").slice(0, 2000) +
+        "\nFULL_HTML (first 3000 chars):\n" +
+        html.slice(0, 3000) +
         "\n"
     );
   } catch (e) {
