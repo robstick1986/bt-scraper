@@ -380,17 +380,69 @@ async function scrapeCatalogProduct(sku, productPath) {
   });
 
   let html = "";
+  let sessionCookies = "";
+  let directPriceCheck = "(not attempted)";
   try {
     const res = await fetch("https://app.scrapingbee.com/api/v1/?" + params.toString());
     const raw = await res.text();
     if (res.ok) {
       const data = JSON.parse(raw);
       html = data.body || data.html || "";
+      if (data.cookies) {
+        sessionCookies = Array.isArray(data.cookies)
+          ? data.cookies
+              .map(function (c) {
+                return c && c.name ? c.name + "=" + c.value : null;
+              })
+              .filter(Boolean)
+              .join("; ")
+          : String(data.cookies);
+      }
     }
   } catch (e) {
     html = "";
   }
   if (!html) return { sku: sku, found: false };
+
+  // Genuinely different test: rather than relying on ScrapingBee's
+  // embedded browser to fire the price AJAX call correctly, make that
+  // exact call ourselves directly (plain Node fetch from this GitHub
+  // Actions runner, NOT through ScrapingBee's proxy at all) using the
+  // real session cookies we just confirmed are valid. This tests
+  // whether the $0 response is specific to ScrapingBee's proxy/browser
+  // environment, since GitHub's own outbound IP is clean and this
+  // bypasses their black-box rendering entirely for this one call.
+  try {
+    const $ids = cheerio.load(html);
+    const productIds = [];
+    $ids("div.display-price").each(function (_, el) {
+      const cls = $ids(el).attr("class") || "";
+      const m = cls.match(/uc-product-(\d+)/);
+      if (m) productIds.push(m[1]);
+    });
+    if (productIds.length > 0 && sessionCookies) {
+      const priceUrl =
+        "https://hcb.co.nz/get-remote-price?" + productIds.map(function (id) {
+          return "product_ids[]=" + id;
+        }).join("&");
+      const directRes = await fetch(priceUrl, {
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          Cookie: sessionCookies,
+          Referer: url,
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        },
+      });
+      const directText = await directRes.text();
+      directPriceCheck =
+        "status=" + directRes.status + " cookieLen=" + sessionCookies.length + " body=" + directText.slice(0, 1000);
+    } else {
+      directPriceCheck = "skipped - productIds=" + productIds.length + " cookieLen=" + sessionCookies.length;
+    }
+  } catch (e) {
+    directPriceCheck = "EXCEPTION: " + String((e && e.message) || e);
+  }
 
   // Write raw diagnostic info to a file - readable via GitHub's Contents
   // API without needing access to the blocked Actions-log or Supabase
@@ -457,6 +509,8 @@ async function scrapeCatalogProduct(sku, productPath) {
         displayPriceInfo.slice(0, 10).join("\n") +
         "\nMANUAL_PRICE_CHECK:\n" +
         manualCheckInfo +
+        "\nDIRECT_PRICE_CHECK (own request, not via ScrapingBee):\n" +
+        directPriceCheck +
         "\npriceAreaHTML:\n" +
         (priceEl.parent().html() || "(no parent found)").slice(0, 2000) +
         "\nPRICE_RELATED_SCRIPTS (" +
