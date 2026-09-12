@@ -1,39 +1,14 @@
-Run at 2026-09-12T02:41:32Z
+Run at 2026-09-12T02:48:01Z
 Checked SKU: DIN66
 [{"sku":"DIN66","price_ex_gst":0,"price_incl_gst":0,"branch_stock":true,"national_stock":true}]
 --- scrape-debug.txt ---
 SKU: DIN66
-isLoggedIn: true
-htmlLength: 48850
-priceElementCount: 4
-priceElementText: "$0.00"
-title: "DIN66 | HCB Technologies Limited | New Zealand's Leading Automotive Battery Supplier"
+isLoggedIn: false
+htmlLength: 209133
+priceElementCount: 0
+priceElementText: ""
+title: "HCB Technologies Ltd."
 priceAreaHTML:
-<label>Total:</label> <span class="uc-price">$0.00</span>
-PRICE_RELATED_SCRIPTS (1 found):
-jQuery.extend(Drupal.settings, {"basePath":"\/","pathPrefix":"","setHasJsCookie":0,"ajaxPageState":{"theme":"kodaweb","theme_token":"rRSp268B5pI5NijFqhbT2hq-k6k2FXutg7xS-DpwJXM","jquery_version":"3.7.1","jquery_version_token":"eWN5CFWKcjI1DLw85KRxBTntmyGm9yeWsU28DWW1naQ","js":{"sites\/all\/themes\/kodaweb\/js\/jquery-andSelf-fix.js":1,"sites\/all\/themes\/bootstrap\/js\/bootstrap.js":1,"0":1,"https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/jquery\/3.7.1\/jquery.min.js":1,"misc\/jquery-extend-3.4.0.j
-FULL_HTML (first 3000 chars):
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd"><html lang="en" dir="ltr" prefix="content: http://purl.org/rss/1.0/modules/content/ dc: http://purl.org/dc/terms/ foaf: http://xmlns.com/foaf/0.1/ og: http://ogp.me/ns# rdfs: http://www.w3.org/2000/01/rdf-schema# sioc: http://rdfs.org/sioc/ns# sioct: http://rdfs.org/sioc/types# skos: http://www.w3.org/2004/02/skos/core# xsd: http://www.w3.org/2001/XMLSchema#" class="js"><head profile="http://www.w3.org/1999/xhtml/vocab">
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<link rel="shortcut icon" href="https://hcb.co.nz/favicon.ico" type="image/vnd.microsoft.icon">
-<meta name="google-site-verification" content="7qJRjhFLVaWHIzZ7G9bGni1My8aBg96MwqKZXPPmbrg">
-<meta name="description" content="AUTOMOTIVE STARTING BATTERY">
-<link rel="canonical" href="https://hcb.co.nz/products/din66">
-<link rel="shortlink" href="https://hcb.co.nz/node/96532">
-  <title>DIN66 | HCB Technologies Limited | New Zealand's Leading Automotive Battery Supplier</title>
-  <link href="https://fonts.googleapis.com/css?family=Lato:400,700" rel="stylesheet" type="text/css">
+(no parent found)
+PRICE_RELATED_SCRIPTS (0 found):
 
-  <link type="text/css" rel="stylesheet" href="https://hcb.co.nz/sites/default/files/css/css_lQaZfjVpwP_oGNqdtWCSpJT1EMqXdMiU84ekLLxQnc4.css" media="all">
-<link type="text/css" rel="stylesheet" href="https://hcb.co.nz/sites/default/files/css/css_ZwQ4JegYk9_vB7LtvEKjfjeVcLzDAa88SNWeshZo5Jw.css" media="all">
-<link type="text/css" rel="stylesheet" href="https://hcb.co.nz/sites/default/files/css/css_TyHVOGQubbS5OlWeDtaxVKiUy3k15nmupJYVCVXmnuk.css" media="all">
-<link type="text/css" rel="stylesheet" href="https://hcb.co.nz/sites/default/files/css/css_GJOLi-rHJ20CwUQVuqDZAPTMIxkgTutaVTO1LyevHGw.css" media="all">
-<link type="text/css" rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" media="all">
-<link type="text/css" rel="stylesheet" href="https://hcb.co.nz/sites/default/files/css/css_GqJLPTt5Ped9c_VCs2azqt_fYlLJSfIspFiWxSmcME8.css" media="all">
-<link type="text/css" rel="stylesheet" href="https://hcb.co.nz/sites/default/files/css/css_-BVGYU1dwwYAlx3y8kNV42YLZN4Hx2_w6RcApcvdAZ8.css" media="all">
-  <!-- HTML5 element support for IE6-8 -->
-  <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-  <![endif]-->
-  <script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-MSFQ61NHPX&amp;cx=c&amp;_slc=1"></script><script type="text/javascript" async="" src="https://www.google-analytics.com/analytics.js"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/destination?id=AW-849403320&amp;cx=c&amp;gtm=4e6992"></script><script async="" src="https://www.google-analytics.com/analytics.js"></script><script type="text/javascript" src="https://www.go
