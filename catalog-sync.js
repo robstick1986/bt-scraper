@@ -581,6 +581,12 @@ async function run() {
   const listing = await walkCategoryListing();
   log("Category walk complete: " + listing.length + " total cards found.");
 
+  try {
+    require("fs").writeFileSync("category-listing.json", JSON.stringify(listing, null, 2));
+  } catch (e) {
+    // non-fatal
+  }
+
   const candidates = listing.filter(function (item) {
     if (!item.sku || !item.productPath) return false;
     if (isExcludedUltraSku(item.sku)) {
