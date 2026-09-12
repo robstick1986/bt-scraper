@@ -1,3 +1,11 @@
-Run at 2026-09-12T01:52:39Z
+Run at 2026-09-12T02:28:36Z
 Checked SKU: DIN66
 [{"sku":"DIN66","price_ex_gst":0,"price_incl_gst":0,"branch_stock":true,"national_stock":true}]
+--- scrape-debug.txt ---
+SKU: DIN66
+isLoggedIn: false
+htmlLength: 2614
+priceElementCount: 0
+priceElementText: ""
+priceAreaHTML:
+(no parent found)
