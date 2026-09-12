@@ -69,6 +69,11 @@ jobs:
             -H "apikey: $SUPABASE_SERVICE_KEY" \
             -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" >> last-run-result.txt
           echo "" >> last-run-result.txt
+          echo "--- Aggregate stats (whole catalog) ---" >> last-run-result.txt
+          TOTAL=$(curl -s "$SUPABASE_URL/rest/v1/battery_catalog?select=sku" -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" -H "Prefer: count=exact" -I | grep -i content-range | tr -d '\r')
+          echo "Total rows: $TOTAL" >> last-run-result.txt
+          NONZERO=$(curl -s "$SUPABASE_URL/rest/v1/battery_catalog?select=sku&price_ex_gst=gt.0" -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" -H "Prefer: count=exact" -I | grep -i content-range | tr -d '\r')
+          echo "Rows with real price (>0): $NONZERO" >> last-run-result.txt
           if [ -f scrape-debug.txt ]; then
             echo "--- scrape-debug.txt ---" >> last-run-result.txt
             cat scrape-debug.txt >> last-run-result.txt
