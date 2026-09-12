@@ -341,20 +341,33 @@ async function scrapeCatalogProduct(sku, productPath) {
         {
           evaluate:
             "try { " +
+            "const hasDrupal = !!(window.Drupal && window.Drupal.settings); " +
+            "const priceUrl = hasDrupal ? window.Drupal.settings.get_price_url : null; " +
             "const ids = Array.from(document.querySelectorAll('div.display-price')).map(el => (el.className.match(/uc-product-(\\d+)/) || [])[1]).filter(Boolean); " +
-            "const url = (window.Drupal && Drupal.settings && Drupal.settings.get_price_url) + '?' + ids.map(id => 'product_ids[]=' + id).join('&'); " +
-            "const resp = await fetch(url, { credentials: 'include' }); " +
-            "const text = await resp.text(); " +
+            "if (!priceUrl || ids.length === 0) { " +
+            "const el = document.createElement('div'); " +
+            "el.id = 'claude-manual-price-check'; " +
+            "el.setAttribute('data-error', 'hasDrupal=' + hasDrupal + ' priceUrl=' + priceUrl + ' idsFound=' + ids.length); " +
+            "document.body.appendChild(el); " +
+            "} else { " +
+            "const url = priceUrl + '?' + ids.map(id => 'product_ids[]=' + id).join('&'); " +
+            "const respWithHeader = await fetch(url, { credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } }); " +
+            "const textWithHeader = await respWithHeader.text(); " +
+            "const respNoHeader = await fetch(url, { credentials: 'include' }); " +
+            "const textNoHeader = await respNoHeader.text(); " +
             "const el = document.createElement('div'); " +
             "el.id = 'claude-manual-price-check'; " +
             "el.setAttribute('data-url', url); " +
-            "el.setAttribute('data-status', String(resp.status)); " +
-            "el.textContent = text.slice(0, 2000); " +
+            "el.setAttribute('data-status-with-header', String(respWithHeader.status)); " +
+            "el.setAttribute('data-status-no-header', String(respNoHeader.status)); " +
+            "el.setAttribute('data-resp-with-header', textWithHeader.slice(0, 500)); " +
+            "el.setAttribute('data-resp-no-header', textNoHeader.slice(0, 500)); " +
             "document.body.appendChild(el); " +
+            "} " +
             "} catch (e) { " +
             "const el = document.createElement('div'); " +
             "el.id = 'claude-manual-price-check'; " +
-            "el.setAttribute('data-error', String(e)); " +
+            "el.setAttribute('data-error', 'EXCEPTION: ' + String(e && e.message || e)); " +
             "document.body.appendChild(el); " +
             "}",
         },
@@ -409,12 +422,16 @@ async function scrapeCatalogProduct(sku, productPath) {
     const manualCheckInfo = manualCheckEl.length
       ? "url=" +
         manualCheckEl.attr("data-url") +
-        " status=" +
-        manualCheckEl.attr("data-status") +
-        " error=" +
+        "\nerror=" +
         manualCheckEl.attr("data-error") +
-        "\nresponse: " +
-        manualCheckEl.text()
+        "\nstatusWithHeader=" +
+        manualCheckEl.attr("data-status-with-header") +
+        " statusNoHeader=" +
+        manualCheckEl.attr("data-status-no-header") +
+        "\nrespWithHeader=" +
+        manualCheckEl.attr("data-resp-with-header") +
+        "\nrespNoHeader=" +
+        manualCheckEl.attr("data-resp-no-header")
       : "(element not found - evaluate step may have failed)";
     fs.writeFileSync(
       "scrape-debug.txt",
