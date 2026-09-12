@@ -1,0 +1,3 @@
+Run at 2026-09-12T01:52:39Z
+Checked SKU: DIN66
+[{"sku":"DIN66","price_ex_gst":0,"price_incl_gst":0,"branch_stock":true,"national_stock":true}]
