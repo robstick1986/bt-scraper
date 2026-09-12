@@ -350,6 +350,17 @@ async function scrapeCatalogProduct(sku, productPath) {
     const isLoggedIn = /logout|log out/i.test(html);
     const $dbg = cheerio.load(html);
     const priceEl = $dbg(".uc-price").first();
+    // Search the full (untruncated) HTML for any script/ajax references
+    // near price loading, to understand the actual mechanism rather
+    // than guessing at wait timing again.
+    const ajaxMatches = [];
+    const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+    let m;
+    while ((m = scriptRegex.exec(html)) !== null) {
+      if (/price|ajax|uc-price|cart/i.test(m[1]) && m[1].trim().length > 0) {
+        ajaxMatches.push(m[1].trim().slice(0, 500));
+      }
+    }
     fs.writeFileSync(
       "scrape-debug.txt",
       "SKU: " +
@@ -366,6 +377,10 @@ async function scrapeCatalogProduct(sku, productPath) {
         JSON.stringify($dbg("title").text().trim()) +
         "\npriceAreaHTML:\n" +
         (priceEl.parent().html() || "(no parent found)").slice(0, 2000) +
+        "\nPRICE_RELATED_SCRIPTS (" +
+        ajaxMatches.length +
+        " found):\n" +
+        ajaxMatches.join("\n---\n").slice(0, 4000) +
         "\nFULL_HTML (first 3000 chars):\n" +
         html.slice(0, 3000) +
         "\n"
