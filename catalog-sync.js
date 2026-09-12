@@ -382,6 +382,7 @@ async function scrapeCatalogProduct(sku, productPath) {
   let html = "";
   let sessionCookies = "";
   let directPriceCheck = "(not attempted)";
+  let directRrpPrice = null;
   try {
     const res = await fetch("https://app.scrapingbee.com/api/v1/?" + params.toString());
     const raw = await res.text();
@@ -404,14 +405,17 @@ async function scrapeCatalogProduct(sku, productPath) {
   }
   if (!html) return { sku: sku, found: false };
 
-  // Genuinely different test: rather than relying on ScrapingBee's
-  // embedded browser to fire the price AJAX call correctly, make that
-  // exact call ourselves directly (plain Node fetch from this GitHub
-  // Actions runner, NOT through ScrapingBee's proxy at all) using the
-  // real session cookies we just confirmed are valid. This tests
-  // whether the $0 response is specific to ScrapingBee's proxy/browser
-  // environment, since GitHub's own outbound IP is clean and this
-  // bypasses their black-box rendering entirely for this one call.
+  // CONFIRMED FIX 2026-09-12: ScrapingBee's embedded browser never gets
+  // a real price back on this specific AJAX sub-request, regardless of
+  // every parameter tried - but making this exact call ourselves,
+  // directly (plain Node fetch from this GitHub Actions runner, NOT
+  // through ScrapingBee's proxy), using the real session cookies just
+  // confirmed valid, returns the genuine price every time. This is now
+  // the real price-fetching mechanism, not a diagnostic experiment.
+  //
+  // The page's own canonical node id (from <link rel="shortlink">)
+  // identifies which of the returned product_ids is THIS SKU - a page
+  // can list multiple products (e.g. premium alternatives).
   try {
     const $ids = cheerio.load(html);
     const productIds = [];
@@ -420,6 +424,9 @@ async function scrapeCatalogProduct(sku, productPath) {
       const m = cls.match(/uc-product-(\d+)/);
       if (m) productIds.push(m[1]);
     });
+    const shortlink = $ids('link[rel="shortlink"]').attr("href") || "";
+    const canonicalNodeId = (shortlink.match(/\/node\/(\d+)/) || [])[1] || productIds[0];
+
     if (productIds.length > 0 && sessionCookies) {
       const priceUrl =
         "https://hcb.co.nz/get-remote-price?" + productIds.map(function (id) {
@@ -437,6 +444,16 @@ async function scrapeCatalogProduct(sku, productPath) {
       const directText = await directRes.text();
       directPriceCheck =
         "status=" + directRes.status + " cookieLen=" + sessionCookies.length + " body=" + directText.slice(0, 1000);
+      if (directRes.ok) {
+        const priceData = JSON.parse(directText);
+        if (priceData.rrp_price_processed && priceData.product_rrp_price_list && canonicalNodeId) {
+          const rawPrice = priceData.product_rrp_price_list[canonicalNodeId];
+          if (rawPrice != null) {
+            const parsed = parseFloat(String(rawPrice).replace(/,/g, ""));
+            if (!isNaN(parsed) && parsed > 0) directRrpPrice = parsed;
+          }
+        }
+      }
     } else {
       directPriceCheck = "skipped - productIds=" + productIds.length + " cookieLen=" + sessionCookies.length;
     }
@@ -540,7 +557,11 @@ async function scrapeCatalogProduct(sku, productPath) {
   const category = $(".field-name-body .field-item").first().text().trim() || null;
   const priceText = $(".uc-price").first().text().trim();
   const priceMatch = priceText.match(/([\d,]+\.\d{2})/);
-  const priceExGst = priceMatch ? parseFloat(priceMatch[1].replace(/,/g, "")) : null;
+  const domPriceExGst = priceMatch ? parseFloat(priceMatch[1].replace(/,/g, "")) : null;
+  // directRrpPrice (from our own direct call) is the confirmed-working
+  // source - the DOM value is kept only as a fallback for cases where
+  // that call didn't return usable data.
+  const priceExGst = directRrpPrice != null ? directRrpPrice : domPriceExGst;
   const found_ = priceExGst != null && priceExGst > 0;
 
   if (!found_) {
