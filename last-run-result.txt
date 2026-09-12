@@ -1,15 +1,17 @@
-Run at 2026-09-12T02:35:15Z
+Run at 2026-09-12T02:41:32Z
 Checked SKU: DIN66
 [{"sku":"DIN66","price_ex_gst":0,"price_incl_gst":0,"branch_stock":true,"national_stock":true}]
 --- scrape-debug.txt ---
 SKU: DIN66
 isLoggedIn: true
-htmlLength: 48981
-priceElementCount: 3
+htmlLength: 48850
+priceElementCount: 4
 priceElementText: "$0.00"
 title: "DIN66 | HCB Technologies Limited | New Zealand's Leading Automotive Battery Supplier"
 priceAreaHTML:
 <label>Total:</label> <span class="uc-price">$0.00</span>
+PRICE_RELATED_SCRIPTS (1 found):
+jQuery.extend(Drupal.settings, {"basePath":"\/","pathPrefix":"","setHasJsCookie":0,"ajaxPageState":{"theme":"kodaweb","theme_token":"rRSp268B5pI5NijFqhbT2hq-k6k2FXutg7xS-DpwJXM","jquery_version":"3.7.1","jquery_version_token":"eWN5CFWKcjI1DLw85KRxBTntmyGm9yeWsU28DWW1naQ","js":{"sites\/all\/themes\/kodaweb\/js\/jquery-andSelf-fix.js":1,"sites\/all\/themes\/bootstrap\/js\/bootstrap.js":1,"0":1,"https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/jquery\/3.7.1\/jquery.min.js":1,"misc\/jquery-extend-3.4.0.j
 FULL_HTML (first 3000 chars):
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd"><html lang="en" dir="ltr" prefix="content: http://purl.org/rss/1.0/modules/content/ dc: http://purl.org/dc/terms/ foaf: http://xmlns.com/foaf/0.1/ og: http://ogp.me/ns# rdfs: http://www.w3.org/2000/01/rdf-schema# sioc: http://rdfs.org/sioc/ns# sioct: http://rdfs.org/sioc/types# skos: http://www.w3.org/2004/02/skos/core# xsd: http://www.w3.org/2001/XMLSchema#" class="js"><head profile="http://www.w3.org/1999/xhtml/vocab">
   <meta charset="utf-8">
@@ -34,4 +36,4 @@ FULL_HTML (first 3000 chars):
   <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
   <![endif]-->
-  <script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-B9KC0B6GB8&amp;cx=c&amp;_slc=1"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-MSFQ61NHPX&amp;cx=c&amp;_slc=1"></script><script type="text/javascript" async="" src="https://www.google-analytics.com/analytics.js"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/destination?id=AW-849403320&amp;cx=c&amp;gtm=4e69a0h2"></s
+  <script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-MSFQ61NHPX&amp;cx=c&amp;_slc=1"></script><script type="text/javascript" async="" src="https://www.google-analytics.com/analytics.js"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/destination?id=AW-849403320&amp;cx=c&amp;gtm=4e6992"></script><script async="" src="https://www.google-analytics.com/analytics.js"></script><script type="text/javascript" src="https://www.go
