@@ -62,10 +62,10 @@ jobs:
           TARGET_SKUS: ${{ github.event.inputs.target_skus }}
         run: |
           SKU="${TARGET_SKUS:-DIN66}"
-          FIRST_SKU=$(echo "$SKU" | cut -d, -f1)
+          SKU_IN_LIST=$(echo "$SKU" | tr ',' '\n' | sed "s/^/\"/;s/$/\"/" | paste -sd, -)
           echo "Run at $(date -u +%Y-%m-%dT%H:%M:%SZ)" > last-run-result.txt
-          echo "Checked SKU: $FIRST_SKU" >> last-run-result.txt
-          curl -s "$SUPABASE_URL/rest/v1/battery_catalog?sku=eq.$FIRST_SKU&select=sku,price_ex_gst,price_incl_gst,branch_stock,national_stock" \
+          echo "Checked SKUs: $SKU" >> last-run-result.txt
+          curl -s "$SUPABASE_URL/rest/v1/battery_catalog?sku=in.($SKU_IN_LIST)&select=sku,price_ex_gst,price_incl_gst,branch_stock,national_stock" \
             -H "apikey: $SUPABASE_SERVICE_KEY" \
             -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" >> last-run-result.txt
           echo "" >> last-run-result.txt
