@@ -334,6 +334,26 @@ async function scrapeCatalogProduct(sku, productPath) {
         { wait: 5000 },
         {
           evaluate:
+            "try { " +
+            "const ids = Array.from(document.querySelectorAll('div.display-price')).map(el => (el.className.match(/uc-product-(\\d+)/) || [])[1]).filter(Boolean); " +
+            "const url = (window.Drupal && Drupal.settings && Drupal.settings.get_price_url) + '?' + ids.map(id => 'product_ids[]=' + id).join('&'); " +
+            "const resp = await fetch(url, { credentials: 'include' }); " +
+            "const text = await resp.text(); " +
+            "const el = document.createElement('div'); " +
+            "el.id = 'claude-manual-price-check'; " +
+            "el.setAttribute('data-url', url); " +
+            "el.setAttribute('data-status', String(resp.status)); " +
+            "el.textContent = text.slice(0, 2000); " +
+            "document.body.appendChild(el); " +
+            "} catch (e) { " +
+            "const el = document.createElement('div'); " +
+            "el.id = 'claude-manual-price-check'; " +
+            "el.setAttribute('data-error', String(e)); " +
+            "document.body.appendChild(el); " +
+            "}",
+        },
+        {
+          evaluate:
             "document.title = document.title + '|finalUrl=' + window.location.href;",
         },
       ],
@@ -379,6 +399,17 @@ async function scrapeCatalogProduct(sku, productPath) {
     displayPriceEls.each(function (i, el) {
       displayPriceInfo.push(JSON.stringify($dbg(el).attr("class")));
     });
+    const manualCheckEl = $dbg("#claude-manual-price-check");
+    const manualCheckInfo = manualCheckEl.length
+      ? "url=" +
+        manualCheckEl.attr("data-url") +
+        " status=" +
+        manualCheckEl.attr("data-status") +
+        " error=" +
+        manualCheckEl.attr("data-error") +
+        "\nresponse: " +
+        manualCheckEl.text()
+      : "(element not found - evaluate step may have failed)";
     fs.writeFileSync(
       "scrape-debug.txt",
       "SKU: " +
@@ -401,6 +432,8 @@ async function scrapeCatalogProduct(sku, productPath) {
         displayPriceEls.length +
         "\ndisplayPriceClasses:\n" +
         displayPriceInfo.slice(0, 10).join("\n") +
+        "\nMANUAL_PRICE_CHECK:\n" +
+        manualCheckInfo +
         "\npriceAreaHTML:\n" +
         (priceEl.parent().html() || "(no parent found)").slice(0, 2000) +
         "\nPRICE_RELATED_SCRIPTS (" +
