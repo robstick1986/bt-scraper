@@ -45,6 +45,15 @@ jobs:
           REQUEST_DELAY_MS: ${{ github.event.inputs.request_delay_ms }}
         run: node catalog-sync.js
 
+      - name: Fetch price-loading JS source for inspection
+        if: always()
+        run: |
+          echo "--- get_remote_price.js ---" > price-js-source.txt
+          curl -s "https://hcb.co.nz/sites/all/modules/custom/koda_price_policy/js/get_remote_price.js" >> price-js-source.txt || echo "fetch failed" >> price-js-source.txt
+          echo "" >> price-js-source.txt
+          echo "--- koda_price_policy_alter.js ---" >> price-js-source.txt
+          curl -s "https://hcb.co.nz/sites/all/modules/custom/koda_price_policy_alter/js/koda_price_policy_alter.js" >> price-js-source.txt || echo "fetch failed" >> price-js-source.txt
+
       - name: Report result to repo (bypasses blocked log/DB domains)
         if: always()
         env:
@@ -66,6 +75,6 @@ jobs:
           fi
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git add last-run-result.txt
+          git add last-run-result.txt price-js-source.txt
           git commit -m "Result: $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "No changes to commit"
           git push
