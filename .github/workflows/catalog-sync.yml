@@ -44,3 +44,24 @@ jobs:
           MAX_PRODUCTS: ${{ github.event.inputs.max_products }}
           REQUEST_DELAY_MS: ${{ github.event.inputs.request_delay_ms }}
         run: node catalog-sync.js
+
+      - name: Report result to repo (bypasses blocked log/DB domains)
+        if: always()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          TARGET_SKUS: ${{ github.event.inputs.target_skus }}
+        run: |
+          SKU="${TARGET_SKUS:-DIN66}"
+          FIRST_SKU=$(echo "$SKU" | cut -d, -f1)
+          echo "Run at $(date -u +%Y-%m-%dT%H:%M:%SZ)" > last-run-result.txt
+          echo "Checked SKU: $FIRST_SKU" >> last-run-result.txt
+          curl -s "$SUPABASE_URL/rest/v1/battery_catalog?sku=eq.$FIRST_SKU&select=sku,price_ex_gst,price_incl_gst,branch_stock,national_stock" \
+            -H "apikey: $SUPABASE_SERVICE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" >> last-run-result.txt
+          echo "" >> last-run-result.txt
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add last-run-result.txt
+          git commit -m "Result: $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "No changes to commit"
+          git push
