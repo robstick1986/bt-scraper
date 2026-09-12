@@ -358,7 +358,7 @@ async function scrapeCatalogProduct(sku, productPath) {
     let m;
     while ((m = scriptRegex.exec(html)) !== null) {
       if (/price|ajax|uc-price|cart/i.test(m[1]) && m[1].trim().length > 0) {
-        ajaxMatches.push(m[1].trim().slice(0, 500));
+        ajaxMatches.push(m[1].trim().slice(0, 6000));
       }
     }
     fs.writeFileSync(
@@ -380,9 +380,7 @@ async function scrapeCatalogProduct(sku, productPath) {
         "\nPRICE_RELATED_SCRIPTS (" +
         ajaxMatches.length +
         " found):\n" +
-        ajaxMatches.join("\n---\n").slice(0, 4000) +
-        "\nFULL_HTML (first 3000 chars):\n" +
-        html.slice(0, 3000) +
+        ajaxMatches.join("\n---\n").slice(0, 8000) +
         "\n"
     );
   } catch (e) {
