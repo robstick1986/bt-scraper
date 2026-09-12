@@ -303,11 +303,17 @@ async function scrapeCatalogProduct(sku, productPath) {
   // scrapingBeeGet() helper - to guarantee there is no remaining,
   // hard-to-spot difference in the helper's own logic (retry loop,
   // cookie normalization side effects, etc.) interfering.
+  // Fresh session_id per product forces ScrapingBee to route through a
+  // genuinely different underlying NZ proxy IP for each price check -
+  // testing whether the server-side response depends on IP/session
+  // reputation building up across many requests from the same one.
+  // country_code stays "nz" - only the session_id (proxy IP) changes.
+  const productSessionId = String(Math.floor(Math.random() * 1000000000));
   const params = new URLSearchParams({
     api_key: SCRAPINGBEE_API_KEY,
     url: url,
     render_js: "true",
-    session_id: SESSION_ID,
+    session_id: productSessionId,
     stealth_proxy: "true",
     block_resources: "false",
     country_code: "nz",
