@@ -1,0 +1,46 @@
+name: Battery Catalog Sync
+
+on:
+  schedule:
+    # 12:00 AM and 12:00 PM NZ time (NZST = UTC+12, so 12:00/00:00 UTC)
+    - cron: "0 0,12 * * *"
+  workflow_dispatch:
+    inputs:
+      target_skus:
+        description: "Comma-separated SKUs to test (leave blank for full run)"
+        required: false
+        default: ""
+      max_products:
+        description: "Limit number of products (leave blank for no limit)"
+        required: false
+        default: ""
+      request_delay_ms:
+        description: "Delay in ms between each product"
+        required: false
+        default: "0"
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run catalog sync
+        env:
+          HCB_USERNAME: ${{ secrets.HCB_USERNAME }}
+          HCB_PASSWORD: ${{ secrets.HCB_PASSWORD }}
+          SCRAPINGBEE_API_KEY: ${{ secrets.SCRAPINGBEE_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          TARGET_SKUS: ${{ github.event.inputs.target_skus }}
+          MAX_PRODUCTS: ${{ github.event.inputs.max_products }}
+          REQUEST_DELAY_MS: ${{ github.event.inputs.request_delay_ms }}
+        run: node catalog-sync.js
