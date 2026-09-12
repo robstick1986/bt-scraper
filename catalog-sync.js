@@ -373,6 +373,12 @@ async function scrapeCatalogProduct(sku, productPath) {
         ajaxMatches.push(m[1].trim().slice(0, 6000));
       }
     }
+    const displayPriceEls = $dbg("div.display-price");
+    const bodyClasses = $dbg("body").attr("class") || "(no body classes)";
+    const displayPriceInfo = [];
+    displayPriceEls.each(function (i, el) {
+      displayPriceInfo.push(JSON.stringify($dbg(el).attr("class")));
+    });
     fs.writeFileSync(
       "scrape-debug.txt",
       "SKU: " +
@@ -387,6 +393,14 @@ async function scrapeCatalogProduct(sku, productPath) {
         JSON.stringify(priceEl.text().trim()) +
         "\ntitle: " +
         JSON.stringify($dbg("title").text().trim()) +
+        "\nbodyClasses: " +
+        bodyClasses +
+        "\nhasUcProductNodeClass: " +
+        /uc-product-node/.test(bodyClasses) +
+        "\ndisplayPriceElementCount: " +
+        displayPriceEls.length +
+        "\ndisplayPriceClasses:\n" +
+        displayPriceInfo.slice(0, 10).join("\n") +
         "\npriceAreaHTML:\n" +
         (priceEl.parent().html() || "(no parent found)").slice(0, 2000) +
         "\nPRICE_RELATED_SCRIPTS (" +
