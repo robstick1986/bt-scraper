@@ -317,13 +317,25 @@ async function scrapeCatalogProduct(sku, productPath) {
       instructions: [
         {
           evaluate:
-            "Array.from(document.querySelectorAll('a')).find(a => /log ?in/i.test(a.textContent))?.click();",
+            "const startUrl = window.location.href; " +
+            "const link = Array.from(document.querySelectorAll('a')).find(a => /log ?in/i.test(a.textContent)); " +
+            "const linkHref = link ? link.href : '(no login link found)'; " +
+            "document.title = 'DEBUG|start=' + startUrl + '|loginHref=' + linkHref; " +
+            "link?.click();",
         },
         { wait_for: 'input[name="email"]' },
+        {
+          evaluate:
+            "document.title = document.title + '|authPageUrl=' + window.location.href;",
+        },
         { fill: ['input[name="email"]', HCB_USERNAME] },
         { fill: ['input[name="password"]', HCB_PASSWORD] },
         { click: 'button[type="submit"]' },
         { wait: 5000 },
+        {
+          evaluate:
+            "document.title = document.title + '|finalUrl=' + window.location.href;",
+        },
       ],
     }),
   });
