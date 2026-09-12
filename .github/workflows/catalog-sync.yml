@@ -60,6 +60,10 @@ jobs:
             -H "apikey: $SUPABASE_SERVICE_KEY" \
             -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" >> last-run-result.txt
           echo "" >> last-run-result.txt
+          if [ -f scrape-debug.txt ]; then
+            echo "--- scrape-debug.txt ---" >> last-run-result.txt
+            cat scrape-debug.txt >> last-run-result.txt
+          fi
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
           git add last-run-result.txt

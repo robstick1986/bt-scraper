@@ -341,6 +341,35 @@ async function scrapeCatalogProduct(sku, productPath) {
   }
   if (!html) return { sku: sku, found: false };
 
+  // Write raw diagnostic info to a file - readable via GitHub's Contents
+  // API without needing access to the blocked Actions-log or Supabase
+  // domains. Captures the exact page state on THIS specific request,
+  // not an inference from a separate diagnostic call.
+  try {
+    const fs = require("fs");
+    const isLoggedIn = /logout|log out/i.test(html);
+    const $dbg = cheerio.load(html);
+    const priceEl = $dbg(".uc-price").first();
+    fs.writeFileSync(
+      "scrape-debug.txt",
+      "SKU: " +
+        sku +
+        "\nisLoggedIn: " +
+        isLoggedIn +
+        "\nhtmlLength: " +
+        html.length +
+        "\npriceElementCount: " +
+        $dbg(".uc-price").length +
+        "\npriceElementText: " +
+        JSON.stringify(priceEl.text().trim()) +
+        "\npriceAreaHTML:\n" +
+        (priceEl.parent().html() || "(no parent found)").slice(0, 2000) +
+        "\n"
+    );
+  } catch (e) {
+    // non-fatal - debug file is best-effort
+  }
+
   const $ = cheerio.load(html);
 
   function fieldText(cls) {
