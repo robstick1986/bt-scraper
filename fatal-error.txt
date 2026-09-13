@@ -1,0 +1,9 @@
+Message: ScrapingBee request failed (401): {"message":"Monthly API calls limit reached: 75000"}
+
+Stack: Error: ScrapingBee request failed (401): {"message":"Monthly API calls limit reached: 75000"}
+
+    at scrapingBeeGet (/home/runner/work/bt-scraper/bt-scraper/catalog-sync.js:135:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async walkCategoryListing (/home/runner/work/bt-scraper/bt-scraper/catalog-sync.js:259:18)
+    at async run (/home/runner/work/bt-scraper/bt-scraper/catalog-sync.js:677:19)
+Full: Error: ScrapingBee request failed (401): {"message":"Monthly API calls limit reached: 75000"}

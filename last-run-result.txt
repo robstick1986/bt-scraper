@@ -1,4 +1,4 @@
-Run at 2026-09-13T04:04:41Z
+Run at 2026-09-13T04:07:39Z
 Checked SKUs: DIN66
 [{"sku":"DIN66","price_ex_gst":431.56,"price_incl_gst":496.29,"branch_stock":true,"national_stock":true}]
 --- Aggregate stats (whole catalog) ---
