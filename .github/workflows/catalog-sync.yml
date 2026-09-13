@@ -18,6 +18,10 @@ on:
         description: "Delay in ms between each product"
         required: false
         default: "0"
+      force_category_walk:
+        description: "Force a fresh category walk (ignore cache)"
+        required: false
+        default: "false"
 
 jobs:
   sync:
@@ -43,6 +47,7 @@ jobs:
           TARGET_SKUS: ${{ github.event.inputs.target_skus }}
           MAX_PRODUCTS: ${{ github.event.inputs.max_products }}
           REQUEST_DELAY_MS: ${{ github.event.inputs.request_delay_ms }}
+          FORCE_CATEGORY_WALK: ${{ github.event.inputs.force_category_walk }}
         run: node catalog-sync.js
 
       - name: Fetch price-loading JS source for inspection

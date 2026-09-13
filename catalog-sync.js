@@ -673,14 +673,53 @@ async function run() {
   // Category listing is public - no login needed to walk it. Each
   // product page now logs in fresh, self-contained, from that exact
   // page (see scrapeCatalogProduct) - no upfront/shared login needed.
-  log("Walking category listing:", CATEGORY_PATH);
-  const listing = await walkCategoryListing();
-  log("Category walk complete: " + listing.length + " total cards found.");
-
-  try {
-    require("fs").writeFileSync("category-listing.json", JSON.stringify(listing, null, 2));
-  } catch (e) {
-    // non-fatal
+  //
+  // COST OPTIMISATION: the category walk costs 20 ScrapingBee requests
+  // every run just to rediscover a product list that barely changes
+  // day to day. Reuse the committed category-listing.json if it exists
+  // and isn't stale, instead of re-walking every single run. Override
+  // with FORCE_CATEGORY_WALK=true to force a fresh walk on demand.
+  //
+  // Age is tracked via a timestamp INSIDE the file's own content, not
+  // filesystem mtime - GitHub Actions does a fresh checkout every run,
+  // which resets mtimes to "now" regardless of when the file was
+  // actually generated.
+  const CACHE_MAX_AGE_DAYS = 7;
+  let listing = null;
+  const forceWalk = process.env.FORCE_CATEGORY_WALK === "true";
+  if (!forceWalk) {
+    try {
+      const fs = require("fs");
+      if (fs.existsSync("category-listing.json")) {
+        const cached = JSON.parse(fs.readFileSync("category-listing.json", "utf8"));
+        if (cached && cached.generatedAt && Array.isArray(cached.items)) {
+          const ageDays = (Date.now() - new Date(cached.generatedAt).getTime()) / (1000 * 60 * 60 * 24);
+          if (ageDays < CACHE_MAX_AGE_DAYS) {
+            listing = cached.items;
+            log("Using cached category listing (" + listing.length + " items, " + ageDays.toFixed(1) + " days old) - skipping the 20-request walk.");
+          } else {
+            log("Cached category listing is " + ageDays.toFixed(1) + " days old (max " + CACHE_MAX_AGE_DAYS + ") - re-walking.");
+          }
+        } else {
+          log("Cached category listing file exists but has no generatedAt timestamp (old format) - re-walking once to upgrade it.");
+        }
+      }
+    } catch (e) {
+      log("Could not read cached category listing (" + (e.message || e) + ") - will re-walk.");
+    }
+  }
+  if (!listing) {
+    log("Walking category listing:", CATEGORY_PATH);
+    listing = await walkCategoryListing();
+    log("Category walk complete: " + listing.length + " total cards found.");
+    try {
+      require("fs").writeFileSync(
+        "category-listing.json",
+        JSON.stringify({ generatedAt: new Date().toISOString(), items: listing }, null, 2)
+      );
+    } catch (e) {
+      // non-fatal
+    }
   }
 
   const candidates = listing.filter(function (item) {
