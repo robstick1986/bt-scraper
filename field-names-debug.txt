@@ -1,0 +1,17 @@
+SKU: DIN66
+field-name-field-product-category => Passenger & Light Commercial
+field-name-field-substitue-codes => Premium Alternatives: 
+    
+            E44
+              
+ 
+field-name-field-length => Length (mm): 275
+field-name-field-width => Width (mm): 175
+field-name-field-height => Box Height (mm): 190
+field-name-field-voltage => Voltage: 12
+field-name-field-cca => CCA: 680
+field-name-field-holddown => Holddown: B3
+field-name-field-terminal-tp => Terminal Type: STD
+field-name-field-assy => Assembly: L
+field-name-field-weight => Weight (Kg): 16
+field-name-field-lithium => Technology: Flooded Calcium Calcium
