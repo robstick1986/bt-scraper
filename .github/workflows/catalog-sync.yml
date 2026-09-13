@@ -70,7 +70,7 @@ jobs:
           SKU_IN_LIST=$(echo "$SKU" | tr ',' '\n' | sed "s/^/\"/;s/$/\"/" | paste -sd, -)
           echo "Run at $(date -u +%Y-%m-%dT%H:%M:%SZ)" > last-run-result.txt
           echo "Checked SKUs: $SKU" >> last-run-result.txt
-          curl -s "$SUPABASE_URL/rest/v1/battery_catalog?sku=in.($SKU_IN_LIST)&select=sku,price_ex_gst,price_incl_gst,branch_stock,national_stock" \
+          curl -s "$SUPABASE_URL/rest/v1/battery_catalog?sku=in.($SKU_IN_LIST)&select=sku,price_ex_gst,price_incl_gst,cost_price,branch_stock,national_stock" \
             -H "apikey: $SUPABASE_SERVICE_KEY" \
             -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" >> last-run-result.txt
           echo "" >> last-run-result.txt
@@ -79,6 +79,8 @@ jobs:
           echo "Total rows: $TOTAL" >> last-run-result.txt
           NONZERO=$(curl -s "$SUPABASE_URL/rest/v1/battery_catalog?select=sku&price_ex_gst=gt.0" -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" -H "Prefer: count=exact" -I | grep -i content-range | tr -d '\r')
           echo "Rows with real price (>0): $NONZERO" >> last-run-result.txt
+          COSTPRICE=$(curl -s "$SUPABASE_URL/rest/v1/battery_catalog?select=sku&cost_price=gt.0" -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" -H "Prefer: count=exact" -I | grep -i content-range | tr -d '\r')
+          echo "Rows with cost_price (>0): $COSTPRICE" >> last-run-result.txt
           if [ -f scrape-debug.txt ]; then
             echo "--- scrape-debug.txt ---" >> last-run-result.txt
             cat scrape-debug.txt >> last-run-result.txt
