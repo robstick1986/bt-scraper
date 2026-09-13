@@ -51,7 +51,7 @@ const HCB_PASSWORD = process.env.HCB_PASSWORD || "";
 const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || "";
 
-const CATEGORY_PATH = "passenger-light-commercial";
+const CATEGORY_PATHS = ["passenger-light-commercial", "heavy-commercial"];
 const GST_RATE = 1.15;
 const CLICK_COLLECT_MULTIPLIER = 0.9;
 
@@ -238,40 +238,50 @@ async function loginToHcb() {
 
 async function walkCategoryListing() {
   const items = [];
-  let pageNum = 0;
+  const seenSkus = new Set();
   const MAX_PAGES = 60;
 
-  while (pageNum < MAX_PAGES) {
-    const url = "https://hcb.co.nz/" + CATEGORY_PATH + "?page=" + pageNum;
-    // No silent catch-to-empty-string here anymore - that was masking a
-    // real ScrapingBee error as "0 rows, stop pagination" with zero
-    // visibility into why. Let genuine failures surface.
-    const html = await scrapingBeeGet(url, { waitFor: ".views-row" });
-    const $ = cheerio.load(html);
-    const rows = $(".views-row");
+  for (const categoryPath of CATEGORY_PATHS) {
+    let pageNum = 0;
+    log("Walking category: " + categoryPath);
+    while (pageNum < MAX_PAGES) {
+      const url = "https://hcb.co.nz/" + categoryPath + "?page=" + pageNum;
+      // No silent catch-to-empty-string here anymore - that was masking a
+      // real ScrapingBee error as "0 rows, stop pagination" with zero
+      // visibility into why. Let genuine failures surface.
+      const html = await scrapingBeeGet(url, { waitFor: ".views-row" });
+      const $ = cheerio.load(html);
+      const rows = $(".views-row");
 
-    if (rows.length === 0) {
-      log(
-        "Page " + pageNum + " had no rows - stopping pagination. HTML length:",
-        html.length,
-        "title:",
-        $("title").text().trim(),
-        "cookies sent (len):",
-        CAPTURED_COOKIES.length
-      );
-      break;
-    }
+      if (rows.length === 0) {
+        log(
+          categoryPath + " page " + pageNum + " had no rows - stopping pagination for this category. HTML length:",
+          html.length,
+          "title:",
+          $("title").text().trim(),
+          "cookies sent (len):",
+          CAPTURED_COOKIES.length
+        );
+        break;
+      }
 
-    rows.each(function (_, row) {
-      const $row = $(row);
-      const productPath = $row.find("[about]").first().attr("about") || null;
-      const sku = $row.find(".field-name-popup-product-link a").first().text().trim() || null;
-      const category = $row.find(".field-name-body .field-item").first().text().trim() || null;
-      items.push({ productPath: productPath, sku: sku, category: category });
+      rows.each(function (_, row) {
+        const $row = $(row);
+        const productPath = $row.find("[about]").first().attr("about") || null;
+        const sku = $row.find(".field-name-popup-product-link a").first().text().trim() || null;
+        const category = $row.find(".field-name-body .field-item").first().text().trim() || null;
+        // A battery can legitimately appear in more than one category
+        // page (e.g. a Heavy Commercial item HCB also cross-lists under
+        // Passenger & Light Commercial) - skip if already collected so
+        // we don't scrape/price the same SKU twice.
+        if (sku && seenSkus.has(sku.toUpperCase())) return;
+        if (sku) seenSkus.add(sku.toUpperCase());
+        items.push({ productPath: productPath, sku: sku, category: category });
     });
 
     log("Page " + pageNum + ": " + rows.length + " rows");
-    pageNum++;
+      pageNum++;
+    }
   }
 
   return items;
@@ -675,6 +685,7 @@ async function run() {
   // which resets mtimes to "now" regardless of when the file was
   // actually generated.
   const CACHE_MAX_AGE_DAYS = 7;
+  const categoryFingerprint = CATEGORY_PATHS.slice().sort().join(",");
   let listing = null;
   const forceWalk = process.env.FORCE_CATEGORY_WALK === "true";
   if (!forceWalk) {
@@ -682,14 +693,16 @@ async function run() {
       const fs = require("fs");
       if (fs.existsSync("category-listing.json")) {
         const cached = JSON.parse(fs.readFileSync("category-listing.json", "utf8"));
-        if (cached && cached.generatedAt && Array.isArray(cached.items)) {
+        if (cached && cached.generatedAt && Array.isArray(cached.items) && cached.categories === categoryFingerprint) {
           const ageDays = (Date.now() - new Date(cached.generatedAt).getTime()) / (1000 * 60 * 60 * 24);
           if (ageDays < CACHE_MAX_AGE_DAYS) {
             listing = cached.items;
-            log("Using cached category listing (" + listing.length + " items, " + ageDays.toFixed(1) + " days old) - skipping the 20-request walk.");
+            log("Using cached category listing (" + listing.length + " items, " + ageDays.toFixed(1) + " days old) - skipping the walk.");
           } else {
             log("Cached category listing is " + ageDays.toFixed(1) + " days old (max " + CACHE_MAX_AGE_DAYS + ") - re-walking.");
           }
+        } else if (cached && cached.categories && cached.categories !== categoryFingerprint) {
+          log("Cached category list (" + cached.categories + ") doesn't match current config (" + categoryFingerprint + ") - re-walking.");
         } else {
           log("Cached category listing file exists but has no generatedAt timestamp (old format) - re-walking once to upgrade it.");
         }
@@ -699,13 +712,13 @@ async function run() {
     }
   }
   if (!listing) {
-    log("Walking category listing:", CATEGORY_PATH);
+    log("Walking category listings:", CATEGORY_PATHS.join(", "));
     listing = await walkCategoryListing();
     log("Category walk complete: " + listing.length + " total cards found.");
     try {
       require("fs").writeFileSync(
         "category-listing.json",
-        JSON.stringify({ generatedAt: new Date().toISOString(), items: listing }, null, 2)
+        JSON.stringify({ generatedAt: new Date().toISOString(), categories: categoryFingerprint, items: listing }, null, 2)
       );
     } catch (e) {
       // non-fatal
