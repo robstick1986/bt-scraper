@@ -626,6 +626,11 @@ async function scrapeCatalogProduct(sku, productPath) {
     cca: numFromField("cca"),
     lengthMm: numFromField("length"),
     widthMm: numFromField("width"),
+    boxHeightMm: numFromField("height"),
+    weightKg: numFromField("weight"),
+    holddown: fieldText("holddown"),
+    terminalType: fieldText("terminal-tp"),
+    assembly: fieldText("assy"),
   };
 }
 
@@ -830,6 +835,11 @@ async function run() {
         cca: product.cca,
         length_mm: product.lengthMm,
         width_mm: product.widthMm,
+        box_height_mm: product.boxHeightMm,
+        weight_kg: product.weightKg,
+        holddown: product.holddown,
+        terminal_type: product.terminalType,
+        assembly: product.assembly,
         scraped_at: new Date().toISOString(),
       });
 
