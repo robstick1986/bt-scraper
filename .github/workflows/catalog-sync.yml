@@ -81,6 +81,8 @@ jobs:
           echo "Rows with real price (>0): $NONZERO" >> last-run-result.txt
           COSTPRICE=$(curl -s "$SUPABASE_URL/rest/v1/battery_catalog?select=sku&cost_price=gt.0" -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" -H "Prefer: count=exact" -I | grep -i content-range | tr -d '\r')
           echo "Rows with cost_price (>0): $COSTPRICE" >> last-run-result.txt
+          SPECS=$(curl -s "$SUPABASE_URL/rest/v1/battery_catalog?select=sku&length_mm=not.is.null" -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" -H "Prefer: count=exact" -I | grep -i content-range | tr -d '\r')
+          echo "Rows with full specs (length_mm not null): $SPECS" >> last-run-result.txt
           if [ -f scrape-debug.txt ]; then
             echo "--- scrape-debug.txt ---" >> last-run-result.txt
             cat scrape-debug.txt >> last-run-result.txt
