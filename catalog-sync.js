@@ -90,21 +90,22 @@ async function scrapingBeeGet(url, opts) {
     url: url,
     render_js: "true",
     session_id: opts.sessionId || SESSION_ID,
-    // Switched from stealth_proxy: diagnosed live that every single
-    // request was landing on a genuinely different Incapsula node
-    // (a different incap_ses_* cookie almost every time), which meant
-    // the login cookie captured from one node was never valid on the
-    // next - explains why login always "succeeded" but every later
-    // request was still logged out regardless of cookie forwarding.
-    // Stealth proxies are built for aggressive IP/session rotation
-    // (that's the evasion mechanism), which is fundamentally at odds
-    // with session_id's "reuse the same proxy" promise. premium_proxy
-    // is a lighter tier that should honour that promise more literally.
-    stealth_proxy: "true",
-    block_resources: "false",
     country_code: "nz",
     json_response: "true",
   });
+  // Category listing pages are public, never needed login, and have
+  // worked reliably under every proxy tier tried tonight - testing
+  // whether they even need the expensive stealth_proxy tier at all.
+  // Product-page logins stay on stealth_proxy unconditionally; that
+  // tier switch already failed there once (premium_proxy broke login
+  // outright), so it isn't worth re-risking on the part that's
+  // actually working.
+  if (opts.cheapTier) {
+    params.set("premium_proxy", "true");
+  } else {
+    params.set("stealth_proxy", "true");
+    params.set("block_resources", "false");
+  }
   if (opts.waitFor) params.set("wait_for", opts.waitFor);
   if (opts.extraWaitMs) params.set("wait", String(opts.extraWaitMs));
   if (opts.jsScenario) params.set("js_scenario", JSON.stringify(opts.jsScenario));
@@ -256,7 +257,7 @@ async function walkCategoryListing() {
     // No silent catch-to-empty-string here anymore - that was masking a
     // real ScrapingBee error as "0 rows, stop pagination" with zero
     // visibility into why. Let genuine failures surface.
-    const html = await scrapingBeeGet(url, { waitFor: ".views-row" });
+    const html = await scrapingBeeGet(url, { waitFor: ".views-row", cheapTier: true });
     const $ = cheerio.load(html);
     const rows = $(".views-row");
 
