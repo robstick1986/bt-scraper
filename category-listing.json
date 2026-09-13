@@ -1,5 +1,6 @@
 {
-  "generatedAt": "2026-09-13T04:16:00.969Z",
+  "generatedAt": "2026-09-13T05:16:37.602Z",
+  "categories": "heavy-commercial,passenger-light-commercial",
   "items": [
     {
       "productPath": "/products/02u",
@@ -1150,6 +1151,371 @@
       "productPath": "/products/u1r-280u",
       "sku": "U1R-280U",
       "category": "Automotive Starting Battery"
+    },
+    {
+      "productPath": "/products/14817",
+      "sku": "148/17",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/14817u",
+      "sku": "148/17U",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/14917",
+      "sku": "149/17",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/14917u",
+      "sku": "149/17U",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/31-900",
+      "sku": "31-900",
+      "category": "HIGH PERFORMANCE BATTERY"
+    },
+    {
+      "productPath": "/products/31-900u",
+      "sku": "31-900U",
+      "category": "High Performance Battery"
+    },
+    {
+      "productPath": "/products/31agm",
+      "sku": "31AGM",
+      "category": "Endurant AGM Starting Battery"
+    },
+    {
+      "productPath": "/products/31agms",
+      "sku": "31AGMS",
+      "category": "AGM Start Battery"
+    },
+    {
+      "productPath": "/products/31agmsu",
+      "sku": "31AGMSU",
+      "category": "AGM Start Battery"
+    },
+    {
+      "productPath": "/products/65820",
+      "sku": "65/820",
+      "category": "AUTOMOTIVE STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/a1",
+      "sku": "A1",
+      "category": "VARTA COMMERCIAL STARTING"
+    },
+    {
+      "productPath": "/products/b90",
+      "sku": "B90",
+      "category": "VARTA COMMERCIAL STARTING"
+    },
+    {
+      "productPath": "/products/c40",
+      "sku": "C40",
+      "category": "VARTA COMMERCIAL STARTING"
+    },
+    {
+      "productPath": "/products/cm148ss",
+      "sku": "CM148SS",
+      "category": "HIGH PERFORMANCE BATTERY"
+    },
+    {
+      "productPath": "/products/cm4d1050u",
+      "sku": "CM4D/1050U",
+      "category": "High Performance Battery"
+    },
+    {
+      "productPath": "/products/cm8d1500u",
+      "sku": "CM8D/1500U",
+      "category": "High Performance Battery"
+    },
+    {
+      "productPath": "/products/code55",
+      "sku": "CODE55",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/code55u",
+      "sku": "CODE55U",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/din180b",
+      "sku": "DIN180B",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/din180bu",
+      "sku": "DIN180BU",
+      "category": "Ultra Commercial Starting"
+    },
+    {
+      "productPath": "/products/din180efb",
+      "sku": "DIN180EFB",
+      "category": "Commercial starting EFB"
+    },
+    {
+      "productPath": "/products/din180efbu",
+      "sku": "DIN180EFBU",
+      "category": "Ultra Commercial EFB"
+    },
+    {
+      "productPath": "/products/g27r",
+      "sku": "G27R",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/gpl1400t",
+      "sku": "GPL1400T",
+      "category": "AGM Starting Battery"
+    },
+    {
+      "productPath": "/products/gpl2400t",
+      "sku": "GPL2400T",
+      "category": "AGM Starting Battery"
+    },
+    {
+      "productPath": "/products/gpl31t",
+      "sku": "GPL31T",
+      "category": "AGM Deep Cycle Battery"
+    },
+    {
+      "productPath": "/products/i6",
+      "sku": "I6",
+      "category": "VARTA COMMERCIAL STARTING"
+    },
+    {
+      "productPath": "/products/j10",
+      "sku": "J10",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/k10",
+      "sku": "K10",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/k11",
+      "sku": "K11",
+      "category": "VARTA COMMERCIAL STARTING"
+    },
+    {
+      "productPath": "/products/k4",
+      "sku": "K4",
+      "category": "VARTA PROMOTIVE BLACK"
+    },
+    {
+      "productPath": "/products/k7",
+      "sku": "K7",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/m11",
+      "sku": "M11",
+      "category": "VARTA COMMERCIAL STARTING"
+    },
+    {
+      "productPath": "/products/m12",
+      "sku": "M12",
+      "category": "Varta Starting Promotive Black"
+    },
+    {
+      "productPath": "/products/m18",
+      "sku": "M18",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/n100",
+      "sku": "N100",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/n100l",
+      "sku": "N100L",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/n100lu",
+      "sku": "N100LU",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n100u",
+      "sku": "N100U",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n120",
+      "sku": "N120",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/n120smf",
+      "sku": "N120SMF",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/n120smfu",
+      "sku": "N120SMFU",
+      "category": "Ultra Heavy Commercial"
+    },
+    {
+      "productPath": "/products/n120u",
+      "sku": "N120U",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n150",
+      "sku": "N150",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/n150lss",
+      "sku": "N150LSS",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/n150lssu",
+      "sku": "N150LSSU",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n150ss",
+      "sku": "N150SS",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/n150ssu",
+      "sku": "N150SSU",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n150u",
+      "sku": "N150U",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n200",
+      "sku": "N200",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/n200lss",
+      "sku": "N200LSS",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n200lssu",
+      "sku": "N200LSSU",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n200ss",
+      "sku": "N200SS",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/n200u",
+      "sku": "N200U",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n617",
+      "sku": "N617",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/n617u",
+      "sku": "N617U",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n621",
+      "sku": "N621",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n621u",
+      "sku": "N621U",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n625",
+      "sku": "N625",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n625u",
+      "sku": "N625U",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n7",
+      "sku": "N7",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/n70z17u",
+      "sku": "N70Z/17U",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n70zl17u",
+      "sku": "N70ZL/17U",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n70zlu",
+      "sku": "N70ZLU",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n70zu",
+      "sku": "N70ZU",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/n9",
+      "sku": "N9",
+      "category": "COMMERCIAL STARTING BATTERY"
+    },
+    {
+      "productPath": "/products/ns7015u",
+      "sku": "NS70/15U",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/ns70l15u",
+      "sku": "NS70L/15U",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/ns70lu",
+      "sku": "NS70LU",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/ns70u",
+      "sku": "NS70U",
+      "category": "Commercial Starting Battery"
+    },
+    {
+      "productPath": "/products/odp-acedinc",
+      "sku": "ODP-ACEDINC",
+      "category": "Odyssey High Performance"
+    },
+    {
+      "productPath": "/products/pc2400",
+      "sku": "PC2400",
+      "category": "High performance 12 volt"
+    },
+    {
+      "productPath": "/products/pc2700",
+      "sku": "PC2700",
+      "category": "High Performance Battery"
     }
   ]
 }
