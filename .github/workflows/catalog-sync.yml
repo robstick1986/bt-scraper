@@ -87,6 +87,6 @@ jobs:
           fi
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git add last-run-result.txt price-js-source.txt category-listing.json; [ -f upsert-error.txt ] && git add upsert-error.txt; [ -f fatal-error.txt ] && git add fatal-error.txt; [ -f field-names-debug.txt ] && git add field-names-debug.txt
+          git add last-run-result.txt price-js-source.txt category-listing.json; [ -f upsert-error.txt ] && git add upsert-error.txt; [ -f fatal-error.txt ] && git add fatal-error.txt; 
           git commit -m "Result: $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "No changes to commit"
           git push
