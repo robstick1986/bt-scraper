@@ -572,21 +572,22 @@ async function scrapeCatalogProduct(sku, productPath) {
 
   const category = $(".field-name-body .field-item").first().text().trim() || null;
 
-  // TEMP DIAGNOSTIC 2026-09-13: length_mm/width_mm captured correctly
-  // but box_height_mm/weight_kg/holddown/terminal_type/assembly all
-  // came back null - the field names copied from scrape.js's
-  // battery_specs capture may not be exactly right for this page.
-  // Dump every field-name-field-* class actually present so the real
-  // names can be confirmed instead of guessed again.
+  // TEMP DIAGNOSTIC 2026-09-13: field names confirmed correct via prior
+  // run - CCA/length/width extract fine but height/weight/holddown/
+  // terminal-tp/assy don't, using the IDENTICAL fieldText() helper.
+  // Dumping raw HTML for one working field vs one failing field to spot
+  // the actual structural difference instead of guessing further.
   try {
-    const fieldClasses = [];
-    $('[class*="field-name-field-"]').each(function (_, el) {
-      const cls = ($(el).attr("class") || "").split(" ").find(function (c) {
-        return c.indexOf("field-name-field-") === 0;
-      });
-      if (cls) fieldClasses.push(cls + " => " + $(el).text().trim().slice(0, 60));
-    });
-    require("fs").writeFileSync("field-names-debug.txt", "SKU: " + sku + "\n" + Array.from(new Set(fieldClasses)).join("\n"));
+    const ccaHtml = $(".field-name-field-cca").first().html();
+    const heightHtml = $(".field-name-field-height").first().html();
+    const holddownHtml = $(".field-name-field-holddown").first().html();
+    require("fs").writeFileSync(
+      "field-names-debug.txt",
+      "SKU: " + sku +
+        "\nWORKING (cca) raw HTML:\n" + (ccaHtml || "(not found)").slice(0, 500) +
+        "\nFAILING (height) raw HTML:\n" + (heightHtml || "(not found)").slice(0, 500) +
+        "\nFAILING (holddown) raw HTML:\n" + (holddownHtml || "(not found)").slice(0, 500)
+    );
   } catch (e) {
     // best-effort
   }
