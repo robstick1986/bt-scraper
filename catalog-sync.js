@@ -651,6 +651,14 @@ async function upsertCatalogRows(rows) {
     const detail = await res.text().catch(function () {
       return "";
     });
+    try {
+      require("fs").writeFileSync(
+        "upsert-error.txt",
+        "Status: " + res.status + "\nDetail: " + detail + "\nSample row: " + JSON.stringify(rows[0], null, 2)
+      );
+    } catch (e) {
+      // best-effort
+    }
     throw new Error("Supabase upsert failed: " + res.status + " " + detail);
   }
 }

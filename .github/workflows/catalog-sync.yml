@@ -2,8 +2,8 @@ name: Battery Catalog Sync
 
 on:
   schedule:
-    # 12:00 AM and 12:00 PM NZ time (NZST = UTC+12, so 12:00/00:00 UTC)
-    - cron: "0 0,12 * * *"
+    # 12:00 AM NZ time daily (NZST = UTC+12, so UTC 12:00 = NZ 00:00 next day)
+    - cron: "0 12 * * *"
   workflow_dispatch:
     inputs:
       target_skus:
@@ -80,6 +80,6 @@ jobs:
           fi
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git add last-run-result.txt price-js-source.txt category-listing.json
+          git add last-run-result.txt price-js-source.txt category-listing.json; [ -f upsert-error.txt ] && git add upsert-error.txt
           git commit -m "Result: $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "No changes to commit"
           git push
