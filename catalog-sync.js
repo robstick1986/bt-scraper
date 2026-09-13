@@ -53,7 +53,11 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || "";
 
 const CATEGORY_PATHS = ["passenger-light-commercial", "heavy-commercial"];
 const GST_RATE = 1.15;
-const CLICK_COLLECT_MULTIPLIER = 0.9;
+// Sell price is now cost_price + markup, not RRP - 10%. Markup is 35%
+// of cost, with a $100 minimum so cheaper batteries still return a
+// reasonable profit in absolute terms.
+const MARKUP_PERCENT = 0.35;
+const MINIMUM_MARKUP = 100;
 
 const STARTING_BATTERY_CATEGORY_RE = /starting battery|start[\s/-]*stop/i;
 const EXCLUDED_CATEGORY_RE = /deep cycle/i;
@@ -623,10 +627,23 @@ async function scrapeCatalogProduct(sku, productPath) {
   };
 }
 
-function computePricing(priceExGst) {
+function computePricing(priceExGst, costPrice) {
   if (priceExGst == null) return { priceExGst: null, priceInclGst: null, clickCollectPrice: null };
   const priceInclGst = Math.round(priceExGst * GST_RATE * 100) / 100;
-  const clickCollectPrice = Math.round(priceInclGst * CLICK_COLLECT_MULTIPLIER * 100) / 100;
+
+  // New pricing rule 2026-09-13 (replaces the old RRP-minus-10% model):
+  // sell price is based on cost + markup, not a discount off RRP.
+  // Markup is 35% of cost, with a $100 minimum so cheaper batteries
+  // still return a reasonable profit in absolute dollar terms - e.g. a
+  // battery costing $150 would only earn ~$52 profit at 35%, so the
+  // $100 floor applies instead. GST is added last, same as RRP.
+  let clickCollectPrice = null;
+  if (costPrice != null && costPrice > 0) {
+    const markup = Math.max(costPrice * MARKUP_PERCENT, MINIMUM_MARKUP);
+    const sellPriceExGst = costPrice + markup;
+    clickCollectPrice = Math.round(sellPriceExGst * GST_RATE * 100) / 100;
+  }
+
   return { priceExGst: priceExGst, priceInclGst: priceInclGst, clickCollectPrice: clickCollectPrice };
 }
 
@@ -793,7 +810,7 @@ async function run() {
         continue;
       }
 
-      const pricing = computePricing(product.priceExGst);
+      const pricing = computePricing(product.priceExGst, product.costPrice);
 
       batch.push({
         sku: item.sku.toUpperCase(),
