@@ -1,4 +1,4 @@
-Run at 2026-09-13T03:38:17Z
+Run at 2026-09-13T03:58:27Z
 Checked SKUs: DIN66,E44
 [{"sku":"DIN66","price_ex_gst":431.56,"price_incl_gst":496.29,"branch_stock":true,"national_stock":true}, 
  {"sku":"E44","price_ex_gst":462.67,"price_incl_gst":532.07,"branch_stock":true,"national_stock":true}]
