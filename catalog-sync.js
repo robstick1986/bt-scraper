@@ -571,6 +571,25 @@ async function scrapeCatalogProduct(sku, productPath) {
   }
 
   const category = $(".field-name-body .field-item").first().text().trim() || null;
+
+  // TEMP DIAGNOSTIC 2026-09-13: length_mm/width_mm captured correctly
+  // but box_height_mm/weight_kg/holddown/terminal_type/assembly all
+  // came back null - the field names copied from scrape.js's
+  // battery_specs capture may not be exactly right for this page.
+  // Dump every field-name-field-* class actually present so the real
+  // names can be confirmed instead of guessed again.
+  try {
+    const fieldClasses = [];
+    $('[class*="field-name-field-"]').each(function (_, el) {
+      const cls = ($(el).attr("class") || "").split(" ").find(function (c) {
+        return c.indexOf("field-name-field-") === 0;
+      });
+      if (cls) fieldClasses.push(cls + " => " + $(el).text().trim().slice(0, 60));
+    });
+    require("fs").writeFileSync("field-names-debug.txt", "SKU: " + sku + "\n" + Array.from(new Set(fieldClasses)).join("\n"));
+  } catch (e) {
+    // best-effort
+  }
   const priceText = $(".uc-price").first().text().trim();
   const priceMatch = priceText.match(/([\d,]+\.\d{2})/);
   const domPriceExGst = priceMatch ? parseFloat(priceMatch[1].replace(/,/g, "")) : null;
