@@ -1,7 +1,28 @@
 SKU: DIN66
-WORKING (cca) raw HTML:
-<div class="field-label">CCA:&nbsp;</div><div class="field-items"><div class="field-item even">680</div></div>
-FAILING (height) raw HTML:
-<div class="field-label">Box Height (mm):&nbsp;</div><div class="field-items"><div class="field-item even">190</div></div>
-FAILING (holddown) raw HTML:
-<div class="field-label">Holddown:&nbsp;</div><div class="field-items"><div class="field-item even">B3</div></div>
+Element counts: {"cca":1,"length":1,"width":1,"height":1,"weight":1,"holddown":1,"terminal-tp":1,"assy":1}
+All values: {
+  "cca": [
+    "CCA: 680"
+  ],
+  "length": [
+    "Length (mm): 275"
+  ],
+  "width": [
+    "Width (mm): 175"
+  ],
+  "height": [
+    "Box Height (mm): 190"
+  ],
+  "weight": [
+    "Weight (Kg): 16"
+  ],
+  "holddown": [
+    "Holddown: B3"
+  ],
+  "terminal-tp": [
+    "Terminal Type: STD"
+  ],
+  "assy": [
+    "Assembly: L"
+  ]
+}
