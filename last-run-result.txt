@@ -1,7 +1,6 @@
-Run at 2026-09-13T03:58:27Z
-Checked SKUs: DIN66,E44
-[{"sku":"DIN66","price_ex_gst":431.56,"price_incl_gst":496.29,"branch_stock":true,"national_stock":true}, 
- {"sku":"E44","price_ex_gst":462.67,"price_incl_gst":532.07,"branch_stock":true,"national_stock":true}]
+Run at 2026-09-13T04:04:41Z
+Checked SKUs: DIN66
+[{"sku":"DIN66","price_ex_gst":431.56,"price_incl_gst":496.29,"branch_stock":true,"national_stock":true}]
 --- Aggregate stats (whole catalog) ---
 Total rows: content-range: 0-99/100
 Rows with real price (>0): content-range: 0-98/99
