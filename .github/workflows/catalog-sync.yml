@@ -70,7 +70,7 @@ jobs:
           SKU_IN_LIST=$(echo "$SKU" | tr ',' '\n' | sed "s/^/\"/;s/$/\"/" | paste -sd, -)
           echo "Run at $(date -u +%Y-%m-%dT%H:%M:%SZ)" > last-run-result.txt
           echo "Checked SKUs: $SKU" >> last-run-result.txt
-          curl -s "$SUPABASE_URL/rest/v1/battery_catalog?sku=in.($SKU_IN_LIST)&select=sku,price_ex_gst,price_incl_gst,cost_price,branch_stock,national_stock" \
+          curl -s "$SUPABASE_URL/rest/v1/battery_catalog?sku=in.($SKU_IN_LIST)&select=sku,price_ex_gst,cost_price,branch_stock,cca,length_mm,width_mm,box_height_mm,weight_kg,holddown,terminal_type,assembly" \
             -H "apikey: $SUPABASE_SERVICE_KEY" \
             -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" >> last-run-result.txt
           echo "" >> last-run-result.txt
