@@ -383,6 +383,7 @@ async function scrapeCatalogProduct(sku, productPath) {
   let sessionCookies = "";
   let directPriceCheck = "(not attempted)";
   let directRrpPrice = null;
+  let directCostPrice = null;
   try {
     const res = await fetch("https://app.scrapingbee.com/api/v1/?" + params.toString());
     const raw = await res.text();
@@ -451,6 +452,17 @@ async function scrapeCatalogProduct(sku, productPath) {
           if (rawPrice != null) {
             const parsed = parseFloat(String(rawPrice).replace(/,/g, ""));
             if (!isNaN(parsed) && parsed > 0) directRrpPrice = parsed;
+          }
+        }
+        // Same response also returns the account's actual trade/cost
+        // price under product_price_list (labelled "Your Price" in the
+        // site's own JS) - already being received, just not previously
+        // captured.
+        if (priceData.price_processed && priceData.product_price_list && canonicalNodeId) {
+          const rawCost = priceData.product_price_list[canonicalNodeId];
+          if (rawCost != null) {
+            const parsedCost = parseFloat(String(rawCost).replace(/,/g, ""));
+            if (!isNaN(parsedCost) && parsedCost > 0) directCostPrice = parsedCost;
           }
         }
       }
@@ -601,6 +613,7 @@ async function scrapeCatalogProduct(sku, productPath) {
     found: found,
     category: category,
     priceExGst: priceExGst,
+    costPrice: directCostPrice,
     branchStock: branchStock,
     nationalStock: nationalStock,
     imageUrl: imageUrl,
@@ -739,6 +752,7 @@ async function run() {
         price_ex_gst: pricing.priceExGst,
         price_incl_gst: pricing.priceInclGst,
         click_collect_price: pricing.clickCollectPrice,
+        cost_price: product.costPrice,
         branch_stock: product.branchStock,
         national_stock: product.nationalStock,
         image_url: product.imageUrl,
