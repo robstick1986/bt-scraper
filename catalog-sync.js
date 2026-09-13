@@ -895,6 +895,14 @@ if (require.main === module) {
   } else {
     run().catch(function (err) {
       console.error("CATALOG_SYNC_FAILED", err);
+      try {
+        require("fs").writeFileSync(
+          "fatal-error.txt",
+          "Message: " + (err && err.message) + "\nStack: " + (err && err.stack) + "\nFull: " + String(err)
+        );
+      } catch (e) {
+        // best-effort
+      }
       process.exit(1);
     });
   }
