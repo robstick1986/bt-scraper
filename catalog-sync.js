@@ -572,21 +572,28 @@ async function scrapeCatalogProduct(sku, productPath) {
 
   const category = $(".field-name-body .field-item").first().text().trim() || null;
 
-  // TEMP DIAGNOSTIC 2026-09-13: field names confirmed correct via prior
-  // run - CCA/length/width extract fine but height/weight/holddown/
-  // terminal-tp/assy don't, using the IDENTICAL fieldText() helper.
-  // Dumping raw HTML for one working field vs one failing field to spot
-  // the actual structural difference instead of guessing further.
+  // TEMP DIAGNOSTIC 2026-09-13 (round 3): raw HTML structure confirmed
+  // identical between working (cca) and failing (height/holddown)
+  // fields, so it's not a selector/structure bug. Testing whether a
+  // "Premium Alternatives" cross-sell block (confirmed present on the
+  // page, linking to a different battery) duplicates these specific
+  // field classes for the alternative product's own spec preview -
+  // which would make .first() grab the wrong instance.
   try {
-    const ccaHtml = $(".field-name-field-cca").first().html();
-    const heightHtml = $(".field-name-field-height").first().html();
-    const holddownHtml = $(".field-name-field-holddown").first().html();
+    const counts = {};
+    const allValues = {};
+    ["cca", "length", "width", "height", "weight", "holddown", "terminal-tp", "assy"].forEach(function (cls) {
+      const matches = $(".field-name-field-" + cls);
+      counts[cls] = matches.length;
+      const values = [];
+      matches.each(function (_, el) {
+        values.push($(el).text().trim().slice(0, 40));
+      });
+      allValues[cls] = values;
+    });
     require("fs").writeFileSync(
       "field-names-debug.txt",
-      "SKU: " + sku +
-        "\nWORKING (cca) raw HTML:\n" + (ccaHtml || "(not found)").slice(0, 500) +
-        "\nFAILING (height) raw HTML:\n" + (heightHtml || "(not found)").slice(0, 500) +
-        "\nFAILING (holddown) raw HTML:\n" + (holddownHtml || "(not found)").slice(0, 500)
+      "SKU: " + sku + "\nElement counts: " + JSON.stringify(counts) + "\nAll values: " + JSON.stringify(allValues, null, 2)
     );
   } catch (e) {
     // best-effort
