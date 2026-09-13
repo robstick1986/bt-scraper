@@ -624,6 +624,8 @@ async function scrapeCatalogProduct(sku, productPath) {
     technology: fieldText("lithium"),
     voltage: fieldText("voltage"),
     cca: numFromField("cca"),
+    lengthMm: numFromField("length"),
+    widthMm: numFromField("width"),
   };
 }
 
@@ -826,6 +828,8 @@ async function run() {
         technology: product.technology,
         voltage: product.voltage,
         cca: product.cca,
+        length_mm: product.lengthMm,
+        width_mm: product.widthMm,
         scraped_at: new Date().toISOString(),
       });
 
