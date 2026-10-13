@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-27T16:32:07.362Z",
+  "generatedAt": "2026-10-13T18:59:26.233Z",
   "categories": "heavy-commercial,passenger-light-commercial",
   "items": [
     {
@@ -778,6 +778,11 @@
       "category": "Varta EFB Starting Battery"
     },
     {
+      "productPath": "/products/n50",
+      "sku": "N50",
+      "category": "Varta Automotive Starting bty"
+    },
+    {
       "productPath": "/products/n55lefb",
       "sku": "N55LEFB",
       "category": "EFB START STOP BATTERY"
@@ -1131,11 +1136,6 @@
       "productPath": "/products/t110refb",
       "sku": "T110REFB",
       "category": "EFB START STOP BATTERY"
-    },
-    {
-      "productPath": "/products/u1-280",
-      "sku": "U1-280",
-      "category": "AUTOMOTIVE STARTING BATTERY"
     },
     {
       "productPath": "/products/u1-280u",
