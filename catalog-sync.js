@@ -53,11 +53,13 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || "";
 
 const CATEGORY_PATHS = ["passenger-light-commercial", "heavy-commercial"];
 const GST_RATE = 1.15;
-// Sell price is now cost_price + markup, not RRP - 10%. Markup is 35%
-// of cost, with a $100 minimum so cheaper batteries still return a
-// reasonable profit in absolute terms.
+// Sell price is cost_price + markup, not RRP - 10%. Markup is 35% of
+// cost, with an $80 minimum so cheaper batteries still return a
+// reasonable profit in absolute terms. (Rob 2026-10-14: minimum lowered
+// from $100 after market check - NS60/55D23L were ~$40-45 over the same
+// Endurant batteries elsewhere.)
 const MARKUP_PERCENT = 0.35;
-const MINIMUM_MARKUP = 100;
+const MINIMUM_MARKUP = 80;
 
 // HCB's category labels are inconsistent free text ("BATTERY VARTA
 // AUTOMOTIVE", "EFB HIGH PERFORMANCE AUTO", "VARTA COMMERCIAL STARTING",
@@ -653,10 +655,10 @@ function computePricing(priceExGst, costPrice) {
 
   // New pricing rule 2026-09-13 (replaces the old RRP-minus-10% model):
   // sell price is based on cost + markup, not a discount off RRP.
-  // Markup is 35% of cost, with a $100 minimum so cheaper batteries
+  // Markup is 35% of cost, with an $80 minimum so cheaper batteries
   // still return a reasonable profit in absolute dollar terms - e.g. a
   // battery costing $150 would only earn ~$52 profit at 35%, so the
-  // $100 floor applies instead. GST is added last, same as RRP.
+  // $80 floor applies instead. GST is added last, same as RRP.
   let clickCollectPrice = null;
   if (costPrice != null && costPrice > 0) {
     const markup = Math.max(costPrice * MARKUP_PERCENT, MINIMUM_MARKUP);
