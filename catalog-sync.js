@@ -59,8 +59,20 @@ const GST_RATE = 1.15;
 const MARKUP_PERCENT = 0.35;
 const MINIMUM_MARKUP = 100;
 
-const STARTING_BATTERY_CATEGORY_RE = /starting battery|start[\s/-]*stop/i;
-const EXCLUDED_CATEGORY_RE = /deep cycle/i;
+// HCB's category labels are inconsistent free text ("BATTERY VARTA
+// AUTOMOTIVE", "EFB HIGH PERFORMANCE AUTO", "VARTA COMMERCIAL STARTING",
+// "AUXILLARY BATTERY VARTA"...). The old filter only accepted labels
+// containing "starting battery" or "start/stop", which silently dropped
+// ~35 genuine Varta/Endurant starting batteries (Varta D54/E46/N60/N70/
+// N80, Varta commercial A1/B90/C40, Endurant EFBs, auxiliaries). Fixed
+// 2026-10-14: accept any start/EFB/auxiliary/Varta label, still exclude
+// deep cycle and dual-purpose.
+const STARTING_BATTERY_CATEGORY_RE = /start|\befb\b|auxil|auxill|varta|promotive/i;
+const EXCLUDED_CATEGORY_RE = /deep\s*cycle|dual purpose/i;
+// Endurant commercial batteries HCB files under the generic "HIGH
+// PERFORMANCE BATTERY" label alongside Odyssey/Crank Master, so they're
+// allowed by SKU rather than by category.
+const ALLOWED_SKUS = new Set(["31-1000", "31-900"]);
 
 function log() {
   const args = Array.prototype.slice.call(arguments);
@@ -757,7 +769,7 @@ async function run() {
       return false;
     }
     const category = item.category || "";
-    if (EXCLUDED_CATEGORY_RE.test(category) || !STARTING_BATTERY_CATEGORY_RE.test(category)) {
+    if (EXCLUDED_CATEGORY_RE.test(category) || !(STARTING_BATTERY_CATEGORY_RE.test(category) || ALLOWED_SKUS.has(item.sku.toUpperCase()))) {
       skippedNonStarting++;
       return false;
     }
