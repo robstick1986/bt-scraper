@@ -1,4 +1,4 @@
-Run at 2026-10-21T16:40:24Z
+Run at 2026-10-22T16:40:47Z
 Checked SKUs: DIN66
 [{"sku":"DIN66","scraped_at":"2026-10-21T00:06:59.614+00:00","price_ex_gst":431.56,"cost_price":165.98,"click_collect_price":282.88,"branch_stock":true,"cca":680,"length_mm":275,"width_mm":175,"box_height_mm":190,"weight_kg":16,"holddown":"B3","terminal_type":"STD","assembly":"L"}]
 --- Aggregate stats (whole catalog) ---
