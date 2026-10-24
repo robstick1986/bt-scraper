@@ -1,6 +1,6 @@
-Run at 2026-10-23T16:30:54Z
+Run at 2026-10-24T15:25:34Z
 Checked SKUs: DIN66
-[{"sku":"DIN66","scraped_at":"2026-10-23T12:07:24.166+00:00","price_ex_gst":431.56,"cost_price":165.98,"click_collect_price":282.88,"branch_stock":true,"cca":680,"length_mm":275,"width_mm":175,"box_height_mm":190,"weight_kg":16,"holddown":"B3","terminal_type":"STD","assembly":"L"}]
+[{"sku":"DIN66","scraped_at":"2026-10-24T12:07:02.38+00:00","price_ex_gst":431.56,"cost_price":165.98,"click_collect_price":282.88,"branch_stock":true,"cca":680,"length_mm":275,"width_mm":175,"box_height_mm":190,"weight_kg":16,"holddown":"B3","terminal_type":"STD","assembly":"L"}]
 --- Aggregate stats (whole catalog) ---
 Total rows: content-range: 0-163/164
 Rows with real price (>0): content-range: 0-163/164
