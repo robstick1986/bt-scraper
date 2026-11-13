@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T17:59:52.241Z",
+  "generatedAt": "2026-11-13T19:19:40.767Z",
   "categories": "heavy-commercial,passenger-light-commercial",
   "items": [
     {
@@ -1206,6 +1206,11 @@
       "productPath": "/products/a1",
       "sku": "A1",
       "category": "VARTA COMMERCIAL STARTING"
+    },
+    {
+      "productPath": "/products/a40",
+      "sku": "A40",
+      "category": "Varta EFB Commercial Starting"
     },
     {
       "productPath": "/products/b90",
