@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-20T19:43:32.914Z",
+  "generatedAt": "2026-11-27T20:48:35.261Z",
   "categories": "heavy-commercial,passenger-light-commercial",
   "items": [
     {
@@ -993,6 +993,11 @@
       "category": "EFB High Performance Auto"
     },
     {
+      "productPath": "/products/odx-agm65",
+      "sku": "ODX-AGM65",
+      "category": "HIGH PERFORMANCE BATTERY"
+    },
+    {
       "productPath": "/products/pc1200",
       "sku": "PC1200",
       "category": "High Performance Battery"
@@ -1020,11 +1025,6 @@
     {
       "productPath": "/products/pc1700",
       "sku": "PC1700",
-      "category": "HIGH PERFORMANCE BATTERY"
-    },
-    {
-      "productPath": "/products/pc1750-65",
-      "sku": "PC1750-65",
       "category": "HIGH PERFORMANCE BATTERY"
     },
     {
